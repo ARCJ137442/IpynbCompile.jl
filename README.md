@@ -54,14 +54,18 @@
 
 #### 各个「特殊注释」的用法
 
-```jupyter-notebook
+忽略单行
+
+```julia
 上边还会被编译
 # %ignore-line # 忽略单行（可直接在此注释后另加字符，会被一并忽略）
 [这是一行被忽略的代码]
 下边也要被编译
 ```
 
-```jupyter-notebook
+忽略下面所有行
+
+```julia
 上边的代码正常编译
 # %ignore-below # 忽略下面所有行（可直接在此注释后另加字符，会被一并忽略）
 [
@@ -71,14 +75,18 @@
 [不管多长都会被忽略]
 ```
 
-```jupyter-notebook
+忽略整个单元格
+
+```julia
 上边的代码会被忽略（不会被编译）
 # %ignore-cell # 忽略整个单元格（可直接在此注释后另加字符，会被一并忽略）
 下面的代码也会被忽略
 ⚠️另外，这些代码连着单元格都不会出现在编译后的文件中，连「标识头」都没有
 ```
 
-```jupyter-notebook
+忽略代码块
+
+```julia
 上边的代码正常编译
 # %ignore-begin # 开始块忽略（可直接在此注释后另加字符，会被一并忽略）
 [这一系列中间的代码会被忽略]
@@ -87,7 +95,9 @@
 下面的代码都会被编译
 ```
 
-```jupyter-notebook
+仅编译后可用
+
+```julia
 上边的代码正常编译，并且会随着笔记本一起执行
 #= %only-compiled # 开始「仅编译后可用」（可直接在此注释后另加字符，会被一并忽略）
 [
@@ -108,4 +118,4 @@
   - 源库使用了 [**Pluto.jl**](https://github.com/fonsp/Pluto.jl) 的「笔记本导出」功能
 - **Jupyter Notebook** 文件格式（JSON）：[🔗nbformat.readthedocs.io](https://nbformat.readthedocs.io/en/latest/format_description.html#notebook-file-format)
 
-⚠️该文件由 IpynbCompile.ipynb 自动生成于 2024-01-15T00:14:18.672，请勿修改！
+⚠️该文件由 IpynbCompile.ipynb 自动生成于 2024-01-15T01:04:35.226，请勿修改！
