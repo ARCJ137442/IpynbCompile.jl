@@ -37,9 +37,9 @@ try_compile_notebook(path, destination) = try
     printstyled("Compiling \"$path\" => \"$destination\"...\n", color=:white)
     local num_bytes = IpynbCompile.compile_notebook(path, destination)
     # 编译结果
-    printstyled("[√] Compile success with $num_bytes bytes!\n", color=:light_green)
+    printstyled("[√] Compiling succeed with $num_bytes bytes!\n", color=:light_green)
 catch e
-    printstyled("[×] Compile failed!\n", color=:light_red)
+    printstyled("[×] Compiling failed!\n", color=:light_red)
     @error e
     showerror(e)
 end

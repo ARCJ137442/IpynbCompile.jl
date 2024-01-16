@@ -847,9 +847,12 @@ IpynbNotebook(json) = IpynbNotebook{IpynbCell}(json)
 
 
 # %% [66] markdown
+# ## 编译单元格
+
+# %% [67] markdown
 # ### 编译/入口
 
-# %% [67] code
+# %% [68] code
 export compile_cell
 
 """
@@ -884,10 +887,10 @@ compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
     for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
 ), '\n')
 
-# %% [68] markdown
+# %% [69] markdown
 # ### 编译/单元格标头
 
-# %% [69] code
+# %% [70] code
 """
 【内部】对整个单元格的「类型标头」编译
 - 🎯生成一行注释，标识单元格
@@ -910,10 +913,10 @@ $(cell.cell_type)
 
 
 
-# %% [70] markdown
+# %% [71] markdown
 # ### 编译/Markdown
 
-# %% [71] code
+# %% [72] code
 """
 对Markdown的编译
 - 📌主要方法：转换成多个单行注释
@@ -936,14 +939,14 @@ $(join(
 
 
 
-# %% [72] markdown
+# %% [73] markdown
 # ### 编译/代码
 
 
-# %% [74] markdown
+# %% [75] markdown
 # 主编译方法
 
-# %% [75] code
+# %% [76] code
 """
 对代码的编译
 - @param cell 所需编译的单元格
@@ -1041,10 +1044,10 @@ end
 
 
 
-# %% [76] markdown
+# %% [77] markdown
 # ## 解析执行单元格
 
-# %% [77] markdown
+# %% [78] markdown
 # 🎯将单元格解析**编译**成Julia表达式，并可直接作为代码执行
 # - 【核心】解释：`parse_cell`
 #     - 📌基本是`compile_cell` ∘ `Meta.parse`的复合
@@ -1056,7 +1059,7 @@ end
 #     - 📌基本是`parse_cell` ∘ `eval`的复合
 #     - ⚙️可任意指定其中的`eval`函数
 
-# %% [78] code
+# %% [79] code
 export parse_cell, tryparse_cell, eval_cell
 
 """
@@ -1134,10 +1137,10 @@ eval_cell(code_or_codes; eval_function=eval, kwargs...) = eval_function(
 
 
 
-# %% [80] markdown
+# %% [81] markdown
 # ## 编译笔记本
 
-# %% [81] code
+# %% [82] code
 export compile_notebook
 
 """
@@ -1207,13 +1210,13 @@ end
 
 
 
-# %% [82] markdown
+# %% [83] markdown
 # ## 解析执行笔记本
 
-# %% [83] markdown
+# %% [84] markdown
 # 执行笔记本
 
-# %% [84] code
+# %% [85] code
 export eval_notebook, eval_notebook_by_cell
 
 """
@@ -1248,10 +1251,10 @@ end
 
 # ! 测试代码放在最后边
 
-# %% [85] markdown
+# %% [86] markdown
 # 引入笔记本
 
-# %% [86] code
+# %% [87] code
 export include_notebook, include_notebook_by_cell
 
 """
@@ -1287,19 +1290,19 @@ include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cel
 
 
 
-# %% [87] markdown
+# %% [88] markdown
 # ## 关闭模块上下文
 
-# %% [88] code
+# %% [89] code
 # ! ↓这后边注释的代码只有在编译后才会被执行
 # ! 仍然使用多行注释语法，以便统一格式
 end # module
 
 
-# %% [89] markdown
+# %% [90] markdown
 # ## 自动构建
 
-# %% [90] markdown
+# %% [91] markdown
 # 构建过程主要包括：
 # 
 # - **自举**构建主模块，生成库文件
