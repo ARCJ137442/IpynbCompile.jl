@@ -302,9 +302,12 @@ const JSONDict{ValueType} = Dict{String,ValueType} where ValueType
 const JSONDictAny = JSONDict{Any}
 
 # %% [39] markdown
-# ## 读取ipynb文件
+# ## 读取解析Jupyter笔记本（`.ipynb`文件）
 
-# %% [40] code
+# %% [40] markdown
+# ### 读取文件（JSON）
+
+# %% [41] code
 export read_ipynb_json
 
 """
@@ -319,10 +322,10 @@ end
 # ! ↓使用`# %ignore-line`让 编译器/解释器 忽略下一行
 
 
-# %% [41] markdown
-# ## 解析文件元信息
-
 # %% [42] markdown
+# ### 解析文件元信息
+
+# %% [43] markdown
 # Jupyter Notebook元数据 格式参考
 # 
 # ```yaml
@@ -347,8 +350,53 @@ end
 # }
 # ```
 
-# %% [43] markdown
-# 当前Julia笔记本数据：
+# %% [44] markdown
+# Jupyter Notebook Cell 格式参考
+# 
+# 共有：
+# 
+# ```yaml
+# {
+#     "cell_type": "type",
+#     "metadata": {},
+#     "source": "single string or [list, of, strings]",
+# }
+# ```
+# 
+# Markdown：
+# 
+# ```yaml
+# {
+#     "cell_type": "markdown",
+#     "metadata": {},
+#     "source": "[multi-line *markdown*]",
+# }
+# ```
+# 
+# 代码：
+# 
+# ```yaml
+# {
+#     "cell_type": "code",
+#     "execution_count": 1,  # integer or null
+#     "metadata": {
+#         "collapsed": True,  # whether the output of the cell is collapsed
+#         "scrolled": False,  # any of true, false or "auto"
+#     },
+#     "source": "[some multi-line code]",
+#     "outputs": [
+#         {
+#             # list of output dicts (described below)
+#             "output_type": "stream",
+#             # ...
+#         }
+#     ],
+# }
+# ```
+
+# %% [45] markdown
+# 当前Julia笔记本 元数据：
+# 
 # ```json
 # {
 #     "language_info": {
@@ -364,12 +412,17 @@ end
 #     }
 # }
 # ```
+# 
+# （截止至2024-01-16）
 
 
-# %% [45] markdown
-# 定义「笔记本」结构
+# %% [47] markdown
+# ## 解析Jupyter笔记本（Julia `struct`）
 
-# %% [46] code
+# %% [48] markdown
+# ### 定义「笔记本」结构
+
+# %% [49] code
 export IpynbNotebook, IpynbNotebookMetadata
 
 """
@@ -379,9 +432,9 @@ export IpynbNotebook, IpynbNotebookMetadata
 """
 @kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
     "语言信息"
-    language_info::JSONDict{String}
+    language_info::JSONDictAny
     "内核信息"
-    kernelspec::JSONDict{String}
+    kernelspec::JSONDictAny
 end
 
 """
@@ -432,12 +485,292 @@ IpynbNotebookMetadata(json::JSONDict) = IpynbNotebookMetadata(;
 # ! ↓使用`# %ignore-below`让 编译器/解释器 忽略后续内容
 
 
-# %% [47] markdown
-# notebook编译/头部注释
+# %% [50] markdown
+# ### 读取笔记本 总函数
+
+# %% [51] code
+export read_notebook
+
+"从路径读取Jupyter笔记本（`struct IpynbNotebook`）"
+read_notebook(path::AbstractString)::IpynbNotebook = IpynbNotebook(read_ipynb_json(path))
+
+# %% [52] markdown
+# ### 解析/生成 笔记本信息
+
+# %% [53] markdown
+# #### 识别编程语言
+
+# %% [54] code
+"【内部】编程语言⇒正则表达式 识别字典"
+const LANG_IDENTIFY_DICT::Dict{Symbol,Regex} = Dict{Symbol,Regex}(
+    lang => Regex("^(?:$regex_str)\$") # ! ←必须头尾精确匹配（不然就会把`JavaScript`认成`r`）
+    for (lang::Symbol, regex_str::String) in
+# ! 以下「特殊注释」需要在行首
+# ! be included in: IpynbCompile.jl @ module IpynbCompile
+# 其值看似作为正则表达式，实则后续需要变为「头尾精确匹配」
+#= 实际上这里只需一个Julia数组 =# [
+    :ahk                => "AutoHotKey|autohotkey|AHK|ahk"
+    :autoit             => "AutoIt|autoit"
+    :bat                => "Bat|bat"
+    :c                  => "[Cc]([Ll]ang)?"
+    :clojure            => "Clojure|clojure"
+    :coffeescript       => "CoffeeScript|Coffeescript|coffeescript"
+    :cpp                => raw"[Cc](\+\+|[Pp][Pp]|plusplus)"
+    :crystal            => "Crystal|crystal"
+    :csharp             => "[Cc](#|[Ss]harp)"
+    :d                  => "[Dd]"
+    :dart               => "Dart|dart"
+    :fortran            => "Fortran|fortran"
+    :fortran_fixed_form => "fortran-fixed-form|fortran_fixed-form"
+    :fortran_free_form  => "FortranFreeForm"
+    :fortran_modern     => "fortran-modern"
+    :fsharp             => "[Ff](#|[Ss]harp)"
+    :go                 => "Go|Golang|GoLang|go"
+    :groovy             => "Groovy|groovy"
+    :haskell            => "Haskell|haskell"
+    :haxe               => "Haxe|haxe"
+    :java               => "Java|java"
+    :javascript         => "JavaScript|Javascript|javascript|JS|js"
+    :julia              => "Julia|julia"
+    :kit                => "Kit|kit"
+    :less               => "LESS|less"
+    :lisp               => "LISP|lisp"
+    :lua                => "Lua|lua"
+    :nim                => "Nim|nim"
+    :objective_c        => "Objective-[Cc]|objective-[Cc]|[Oo]bj-[Cc]"
+    :ocaml              => "OCaml|ocaml"
+    :pascal             => "Pascal|pascal"
+    :perl               => "Perl|perl"
+    :perl6              => "Perl6|perl6"
+    :php                => "PHP|php"
+    :powershell         => "Powershell|powershell"
+    :python             => "Python|python"
+    :r                  => "[Rr]"
+    :racket             => "Racket|racket"
+    :ruby               => "Ruby|ruby"
+    :rust               => "Rust|rust"
+    :sass               => "SASS|sass"
+    :scala              => "Scala|scala"
+    :scheme             => "Scheme|scheme"
+    :scss               => "SCSS|scss"
+    :shellscript        => "Shellscript|ShellScript|shellscript"
+    :smalltalk          => "Smalltalk|smalltalk"
+    :swift              => "Swift|swift"
+    :applescript        => "AppleScript|Applescript|applescript"
+    :typescript         => "TypeScript|Typescript|typescript|TS|ts"
+    :v                  => "[Vv]"
+    :vbscript           => "VBScript|vbscript"
+    :zig                => "Zig|zig"
+]
+)
+
+
+"""
+【内部】识别笔记本的编程语言
+- @returns 特定语言的`Symbol` | `nothing`（若未找到/不支持）
+- 📌目前基于的字段：`metadata.kernelspec.language`
+    - 💭备选字段：`metadata.language_info.name`
+    - 📝备选的字段在IJava中出现了`Java`的情况，而前者在IJava中仍然保持小写
+- 📝Julia的`findXXX`方法，在`Dict`类型上是「基于『值』找『键』」的运作方式
+    - key: `findfirst(::Dict{K,V})::K do V [...]`
+- ⚠️所谓「使用的编程语言」是基于「笔记本」而非「单元格」的
+"""
+identify_lang(notebook::IpynbNotebook) = identify_lang(
+    # 获取字符串
+    get(
+        notebook.metadata.kernelspec, "language",
+        get(
+            notebook.metadata.language_info, "name",
+            # ! 默认返回空字串
+            ""
+        )
+    )
+)
+identify_lang(language_text::AbstractString) = findfirst(LANG_IDENTIFY_DICT) do regex
+    contains(language_text, regex)
+end # ! 默认返回`nothing`
+
+
+# %% [55] markdown
+# #### 根据编程语言生成注释
+# 
+# - 生成的注释会用于「行开头」识别
+#     - 如：`// %ignore-cell` (C系列)
+#     - 如：`# %ignore-cell` (Python/Julia)
+
+# %% [56] code
+"【内部】编程语言⇒单行注释"
+const LANG_COMMENT_DICT_INLINE::Dict{Symbol,String} = Dict{Symbol,String}()
+
+"【内部】编程语言⇒多行注释开头"
+const LANG_COMMENT_DICT_MULTILINE_HEAD::Dict{Symbol,String} = Dict{Symbol,String}()
+
+"【内部】编程语言⇒多行注释结尾"
+const LANG_COMMENT_DICT_MULTILINE_TAIL::Dict{Symbol,String} = Dict{Symbol,String}()
+
+# * 遍历表格，生成列表
+# * 外部表格的数据结构：`Dict(语言 => [单行注释, [多行注释开头, 多行注释结尾]])`
+for (lang::Symbol, (i::String, (m_head::String, m_tail::String))) in (
+# ! 以下「特殊注释」需要在行首
+# ! be included in: IpynbCompile.jl @ module IpynbCompile
+# *【2024-01-16 18:10:05】此映射表目前只用于【依语言】*识别/生成*相应注释
+# * 此处只给出部分语言的单行（一个字串，无尾随空格）和多行注释格式（一头一尾两个字串）
+# ! 所在的语言必须【同时】具有单行注释与多行注释
+#= 后续读取之后建立字典 =# [
+    :c                  => ["//", ("/*", "*/")]
+    :cpp                => ["//", ("/*", "*/")]
+    # :crystal            => []
+    # :csharp             => []
+    :d                  => ["//", ("/+", "+/")]
+    # :dart               => []
+    # :fortran            => []
+    # :fortran_fixed_form => []
+    # :fortran_free_form  => []
+    # :fortran_modern     => []
+    # :fsharp             => []
+    # :go                 => []
+    # :groovy             => []
+    # :haskell            => []
+    # :haxe               => []
+    :java               => ["//", ("/*", "*/")]
+    :javascript         => ["//", ("/*", "*/")]
+    :julia              => ["#", ("#=", "=#")]
+    # :kit                => []
+    # :less               => []
+    # :lisp               => []
+    # :lua                => []
+    # :nim                => []
+    :objective_c        => ["//", ("/*", "*/")]
+    # :ocaml              => []
+    # :pascal             => []
+    # :perl               => []
+    # :perl6              => []
+    # :php                => []
+    # :powershell         => []
+    :python             => ["#", ("'''", "'''")] # ! 近似无多行注释（使用多行字串当注释）
+    # :r                  => [] # ! 无多行注释
+    # :racket             => []
+    # :ruby               => []
+    # :rust               => []
+    # :sass               => []
+    # :scala              => []
+    # :scheme             => []
+    # :scss               => []
+    # :shellscript        => []
+    # :smalltalk          => []
+    # :swift              => []
+    # :applescript        => []
+    :typescript         => ["//", ("/*", "*/")]
+    # :v                  => []
+    # :vbscript           => []
+    # :zig                => []
+]
+)
+    LANG_COMMENT_DICT_INLINE[lang] = i
+    LANG_COMMENT_DICT_MULTILINE_HEAD[lang] = m_head
+    LANG_COMMENT_DICT_MULTILINE_TAIL[lang] = m_tail
+end
+
+"【内部】生成单行注释 | ⚠️找不到⇒报错"
+generate_comment_inline(lang::Symbol) = LANG_COMMENT_DICT_INLINE[lang]
+
+"【内部】生成块注释开头 | ⚠️找不到⇒报错"
+generate_comment_multiline_head(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_HEAD[lang]
+
+"【内部】生成块注释结尾 | ⚠️找不到⇒报错"
+generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL[lang]
+
+
+
+# %% [57] markdown
+# #### 生成常用扩展名
+
+# %% [58] code
+"【内部】编程语言⇒常用扩展名（不带`.`）"
+const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
+# ! 以下「特殊注释」需要在行首
+# ! be included in: IpynbCompile.jl @ module IpynbCompile
+# * 记录【未指定路径时】从语言到扩展名的映射 | 一般是常见扩展名 | 不带「.」 | 注释为【不确定】项
+#= 实际上这里只需一个Julia数组 =# [
+    # :ahk                => "ahk"
+    # :autoit             => "autoit"
+    # :bat                => "bat"
+    :c                  => "c"
+    # :clojure            => "clj"
+    # :coffeescript       => "coffeescript"
+    :cpp                => "cpp"
+    # :crystal            => "crystal"
+    # :csharp             => "csharp"
+    # :d                  => "d"
+    # :dart               => "dart"
+    # :fortran            => "fortran"
+    # :fortran_fixed_form => "fortran_fixed_form"
+    # :fortran_free_form  => "fortran_free_form"
+    # :fortran_modern     => "fortran_modern"
+    # :fsharp             => "fsharp"
+    # :go                 => "go"
+    # :groovy             => "groovy"
+    # :haskell            => "haskell"
+    # :haxe               => "haxe"
+    :java               => "java"
+    :javascript         => "js"
+    :julia              => "jl"
+    # :kit                => "kit"
+    # :less               => "less"
+    # :lisp               => "lisp"
+    # :lua                => "lua"
+    # :nim                => "nim"
+    # :objective_c        => "objective_c"
+    # :ocaml              => "ocaml"
+    # :pascal             => "pascal"
+    # :perl               => "perl"
+    # :perl6              => "perl6"
+    :php                => "php"
+    # :powershell         => "powershell"
+    :python             => "py"
+    :r                  => "r"
+    # :racket             => "racket"
+    # :ruby               => "ruby"
+    # :rust               => "rust"
+    # :sass               => "sass"
+    # :scala              => "scala"
+    # :scheme             => "scheme"
+    # :scss               => "scss"
+    # :shellscript        => "shellscript"
+    # :smalltalk          => "smalltalk"
+    # :swift              => "swift"
+    # :applescript        => "applescript"
+    :typescript         => "ts"
+    # :v                  => "v"
+    # :vbscript           => "vbscript"
+    # :zig                => "zig"
+]
+)
+
+
+"""
+【内部】根据编程语言猜测扩展名
+- @returns 特定语言的`Symbol` | 语言本身的字符串形式
+    - @default 如`:aaa => "aaa"`
+"""
+get_extension(lang::Symbol) = get(
+    LANG_EXTENSION_DICT, lang,
+    string(lang)
+)
+
+
+
+# %% [59] markdown
+# #### 解析/生成 测试
+
+
+# %% [61] markdown
+# ### Notebook编译/头部注释
+# 
 # - 🎯标注 版本信息
 # - 🎯标注 各类元数据
 
-# %% [48] code
+# %% [62] code
 """
 【内部】从Notebook生成头部注释
 - ⚠️末尾有换行
@@ -451,25 +784,25 @@ IpynbNotebookMetadata(json::JSONDict) = IpynbNotebookMetadata(;
 # % nbformat_minor: 2
 ```
 """
-compile_notebook_head(notebook::IpynbNotebook; kwargs...) = """\
-# %% Jupyter Notebook | $(notebook.metadata.kernelspec["display_name"]) \
+compile_notebook_head(notebook::IpynbNotebook; lang::Symbol, kwargs...) = """\
+$(generate_comment_inline(lang)) %% Jupyter Notebook | $(notebook.metadata.kernelspec["display_name"]) \
 @ $(notebook.metadata.language_info["name"]) | \
 format $(notebook.nbformat_minor)~$(notebook.nbformat)
-# % language_info: $(JSON.json(notebook.metadata.language_info))
-# % kernelspec: $(JSON.json(notebook.metadata.kernelspec))
-# % nbformat: $(notebook.nbformat)
-# % nbformat_minor: $(notebook.nbformat_minor)
+$(generate_comment_inline(lang)) % language_info: $(JSON.json(notebook.metadata.language_info))
+$(generate_comment_inline(lang)) % kernelspec: $(JSON.json(notebook.metadata.kernelspec))
+$(generate_comment_inline(lang)) % nbformat: $(notebook.nbformat)
+$(generate_comment_inline(lang)) % nbformat_minor: $(notebook.nbformat_minor)
 """
 
 
 
-# %% [49] markdown
+# %% [63] markdown
 # ## 解析处理单元格
 
-# %% [50] markdown
-# 定义「单元格」结构
+# %% [64] markdown
+# ### 定义「单元格」结构
 
-# %% [51] code
+# %% [65] code
 export IpynbCell
 
 """
@@ -513,14 +846,14 @@ IpynbNotebook(json) = IpynbNotebook{IpynbCell}(json)
 
 
 
-# %% [52] markdown
-# 编译/入口
+# %% [66] markdown
+# ### 编译/入口
 
-# %% [53] code
+# %% [67] code
 export compile_cell
 
 """
-【入口】将一个单元格编译成Julia代码（包括注释）
+【入口】将一个单元格编译成代码（包括注释）
 - 📌根据「单元格类型」`code_type`字段进行细致分派
 - ⚠️编译生成的字符串需要附带【完整】的换行信息
     - 亦即：编译后的「每一行」都需附带换行符
@@ -535,7 +868,7 @@ compile_cell(cell::IpynbCell; kwargs...)::String = compile_cell(
 )
 
 """
-【入口】将多个单元格编译成Julia代码（包括注释）
+【入口】将多个单元格编译成代码（包括注释）
 - 先各自编译，然后join(_, '\\n')
 - ⚠️编译后不附带「最终换行符」
 """
@@ -551,6 +884,10 @@ compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
     for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
 ), '\n')
 
+# %% [68] markdown
+# ### 编译/单元格标头
+
+# %% [69] code
 """
 【内部】对整个单元格的「类型标头」编译
 - 🎯生成一行注释，标识单元格
@@ -565,18 +902,18 @@ compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
 ```
 # ↑末尾附带换行符
 """
-compile_cell_head(cell::IpynbCell; kwargs...) = """\
-# %% \
+compile_cell_head(cell::IpynbCell; lang::Symbol, kwargs...) = """\
+$(generate_comment_inline(lang)) %% \
 $(#= 可选的行号 =# haskey(kwargs, :line_num) ? "[$(kwargs[:line_num])] " : "")\
 $(cell.cell_type)
 """ # ! ←末尾附带换行符
 
 
 
-# %% [54] markdown
-# 编译/Markdown
+# %% [70] markdown
+# ### 编译/Markdown
 
-# %% [55] code
+# %% [71] code
 """
 对Markdown的编译
 - 📌主要方法：转换成多个单行注释
@@ -589,21 +926,24 @@ $(cell.cell_type)
 ```
 # ↑末尾附带换行符
 """
-compile_cell(::Val{:markdown}, cell::IpynbCell; kwargs...) = """\
-$(#= 附带标头 =# compile_cell_head(cell; kwargs...))\
+compile_cell(::Val{:markdown}, cell::IpynbCell; lang::Symbol, kwargs...) = """\
+$(#= 附带标头 =# compile_cell_head(cell; lang, kwargs...))\
 $(join(
-    "# $md_line"
+    "$(generate_comment_inline(lang)) $md_line"
     for md_line in cell.source
 ) #= ←此处无需附加换行符，`md_line`已自带 =#)
 """ # ! ↑末尾附带换行符
 
 
 
-# %% [56] markdown
-# 编译/代码
+# %% [72] markdown
+# ### 编译/代码
 
 
-# %% [58] code
+# %% [74] markdown
+# 主编译方法
+
+# %% [75] code
 """
 对代码的编译
 - @param cell 所需编译的单元格
@@ -635,11 +975,7 @@ end
 """
 【内部，默认不导出】编译代码行
 - 🎯根据单元格的`source::Vector{String}`字段，预处理并返回【修改后】的源码
-- 📌在此开始执行各种「行编译逻辑」（在此列举部分）- `# %ignore-line` 忽略下一行
-    - `# %ignore-below` 忽略下面所有行
-    - `# %ignore-cell` 忽略整个单元格
-    - `#= %only-compiled` 仅编译后可用（头）
-    - `%only-compiled =#` 仅编译后可用（尾）
+- 📌在此开始执行各种「行编译逻辑」（具体用法参考先前文档）
 - ⚠️编译后的文本是「每行都有换行符」
     - 对最后一行增加了换行符，以便和先前所有行一致
 - @param cell 所需编译的单元格
@@ -647,6 +983,8 @@ end
 - @return 编译后的源码 | nothing（表示「完全不呈现单元格」）
 """
 function compile_code_lines(cell::IpynbCell;
+    # 所使用的编程语言
+    lang::Symbol,
     # 根路径（默认为「执行编译的文件」所在目录）
     root_path::AbstractString=@__DIR__,
     # 其它参数
@@ -661,31 +999,31 @@ function compile_code_lines(cell::IpynbCell;
     while current_line_i <= len_lines
         current_line = lines[current_line_i]
         # * `%ignore-line` 忽略下一行 | 仅需为行前缀
-        if startswith(current_line, "# %ignore-line")
+        if startswith(current_line, "$(generate_comment_inline(lang)) %ignore-line")
             current_line_i += 1 # ! 结合后续递增，跳过下面一行，不让本「特殊注释」行被编译
         # * `%ignore-below` 忽略下面所有行 | 仅需为行前缀
-        elseif startswith(current_line, "# %ignore-below")
+        elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-below")
             break # ! 结束循环，不再编译后续代码
         # * `%ignore-cell` 忽略整个单元格 | 仅需为行前缀
-        elseif startswith(current_line, "# %ignore-cell")
+        elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-cell")
             return nothing # ! 返回「不编译单元格」的信号
         # * `%include` 读取其所指定的路径，并将其内容作为「当前行」添加（不会自动添加换行！） | 仅需为行前缀
-        elseif startswith(current_line, "# %include")
+        elseif startswith(current_line, "$(generate_comment_inline(lang)) %include")
             # 在指定的「根路径」参数下行事 # * 无需使用`@inline`，编译器会自动内联
-            local relative_path = current_line[nextind(current_line, 1, length("# %include ")):end] |> rstrip # ! ←注意`%include`后边有个空格
+            local relative_path = current_line[nextind(current_line, 1, length("$(generate_comment_inline(lang)) %include ")):end] |> rstrip # ! ←注意`%include`后边有个空格
             # 读取内容
             local content::String = read(joinpath(root_path, relative_path), String)
             result *= content # ! 不会自动添加换行！
         # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
-        elseif startswith(current_line, "# %ignore-begin")
-            # 只要后续没有以"# %ignore-end"开启的行，就不断跳过
-            while !startswith(lines[current_line_i], "# %ignore-end") && current_line_i <= len_lines
+        elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-begin")
+            # 只要后续没有以"$(generate_comment_inline(lang)) %ignore-end"开启的行，就不断跳过
+            while !startswith(lines[current_line_i], "$(generate_comment_inline(lang)) %ignore-end") && current_line_i <= len_lines
                 current_line_i += 1 # 忽略性递增
             end # ! 让最终递增跳过"# %ignore-end"所在行
         # * `%only-compiled` 仅编译后可用（多行） | 仅需为行前缀
         elseif (
-            startswith(current_line, "#= %only-compiled") ||
-            startswith(current_line, "%only-compiled =#")
+            startswith(current_line, "$(generate_comment_multiline_head(lang)) %only-compiled") ||
+            startswith(current_line, "%only-compiled $(generate_comment_multiline_tail(lang))")
             )
             # ! 不做任何事情，跳过当前行
         # * 否则：直接将行追加到结果
@@ -703,10 +1041,10 @@ end
 
 
 
-# %% [59] markdown
+# %% [76] markdown
 # ## 解析执行单元格
 
-# %% [60] markdown
+# %% [77] markdown
 # 🎯将单元格解析**编译**成Julia表达式，并可直接作为代码执行
 # - 【核心】解释：`parse_cell`
 #     - 📌基本是`compile_cell` ∘ `Meta.parse`的复合
@@ -718,7 +1056,7 @@ end
 #     - 📌基本是`parse_cell` ∘ `eval`的复合
 #     - ⚙️可任意指定其中的`eval`函数
 
-# %% [61] code
+# %% [78] code
 export parse_cell, tryparse_cell, eval_cell
 
 """
@@ -796,10 +1134,10 @@ eval_cell(code_or_codes; eval_function=eval, kwargs...) = eval_function(
 
 
 
-# %% [63] markdown
+# %% [80] markdown
 # ## 编译笔记本
 
-# %% [64] code
+# %% [81] code
 export compile_notebook
 
 """
@@ -810,9 +1148,14 @@ export compile_notebook
 - @param notebook 要编译的笔记本对象
 - @return 编译后的文本
 """
-compile_notebook(notebook::IpynbNotebook; kwargs...) = """\
-$(compile_notebook_head(notebook; kwargs...))
-$(compile_cell(notebook.cells; kwargs...))
+compile_notebook(
+    notebook::IpynbNotebook; 
+    # 自动识别语言
+    lang=identify_lang(notebook), 
+    kwargs...
+) = """\
+$(compile_notebook_head(notebook; lang, kwargs...))
+$(compile_cell(notebook.cells; lang, kwargs...))
 """ # ! `$(compile_notebook_head(notebook))`在原本的换行下再空一行，以便与后续单元格分隔
 
 """
@@ -830,11 +1173,10 @@ compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) = wri
 
 """
 编译指定路径的笔记本，并写入指定路径
-- 「写入路径」默认为「读入路径+`.jl`」
 - @param path 要读取的路径
 - @return 写入结果
 """
-compile_notebook(path::AbstractString, destination="$path.jl"; kwargs...) = compile_notebook(
+compile_notebook(path::AbstractString, destination; kwargs...) = compile_notebook(
     # 直接使用构造函数加载笔记本
     IpynbNotebook(path), 
     # 保存在目标路径
@@ -844,15 +1186,34 @@ compile_notebook(path::AbstractString, destination="$path.jl"; kwargs...) = comp
     root_path=dirname(path),
 )
 
+"""
+编译指定路径的笔记本，并根据读入的笔记本【自动追加相应扩展名】
+- @param path 要读取的路径
+- @return 写入结果
+"""
+function compile_notebook(path::AbstractString; kwargs...)
+    # 直接使用构造函数加载笔记本
+    local notebook::IpynbNotebook = IpynbNotebook(path)
+    # 返回
+    return compile_notebook(
+        notebook,
+        # 根据语言自动追加扩展名
+        destination="$path.$(IpynbCompile.get_extension(lang))";
+        # 其它附加参数 #
+        # 自动从`path`构造编译根目录
+        root_path=dirname(path),
+    )
+end
 
 
-# %% [65] markdown
+
+# %% [82] markdown
 # ## 解析执行笔记本
 
-# %% [66] markdown
+# %% [83] markdown
 # 执行笔记本
 
-# %% [67] code
+# %% [84] code
 export eval_notebook, eval_notebook_by_cell
 
 """
@@ -862,9 +1223,11 @@ export eval_notebook, eval_notebook_by_cell
         - 如「将全笔记本代码打包成一个模块」
 """
 eval_notebook(notebook::IpynbNotebook; kwargs...) = eval_cell(
-   notebook.cells;
-   # 其它附加参数（如「编译根目录」）
-   kwargs...
+    notebook.cells;
+    # 自动识别语言
+    lang=identify_lang(notebook),
+    # 其它附加参数（如「编译根目录」）
+    kwargs...
 )
 
 """
@@ -885,10 +1248,10 @@ end
 
 # ! 测试代码放在最后边
 
-# %% [68] markdown
+# %% [85] markdown
 # 引入笔记本
 
-# %% [69] code
+# %% [86] code
 export include_notebook, include_notebook_by_cell
 
 """
@@ -924,19 +1287,19 @@ include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cel
 
 
 
-# %% [70] markdown
+# %% [87] markdown
 # ## 关闭模块上下文
 
-# %% [71] code
+# %% [88] code
 # ! ↓这后边注释的代码只有在编译后才会被执行
 # ! 仍然使用多行注释语法，以便统一格式
 end # module
 
 
-# %% [72] markdown
+# %% [89] markdown
 # ## 自动构建
 
-# %% [73] markdown
+# %% [90] markdown
 # 构建过程主要包括：
 # 
 # - **自举**构建主模块，生成库文件

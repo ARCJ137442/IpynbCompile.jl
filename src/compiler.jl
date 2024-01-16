@@ -33,9 +33,9 @@ include(LIB_JL_PATH)
 # ## 预置函数
 
 # %% [8] code
-try_compile_notebook(path, destination = "$path.jl") = try
+try_compile_notebook(path, destination) = try
     printstyled("Compiling \"$path\" => \"$destination\"...\n", color=:white)
-    num_bytes = IpynbCompile.compile_notebook(path, destination)
+    local num_bytes = IpynbCompile.compile_notebook(path, destination)
     # 编译结果
     printstyled("[√] Compile success with $num_bytes bytes!\n", color=:light_green)
 catch e
@@ -78,11 +78,16 @@ function interactive_mode()
             printstyled("Compiler exit!\n", color=:light_blue)
             return
         end
+        # 先读取笔记本
+        printstyled("Reading \"$path\"...\n", color=:white)
+        local notebook = IpynbCompile.read_notebook(path)
+        local lang = IpynbCompile.identify_lang(notebook)
+        local default_out = "$path.$(IpynbCompile.get_extension(lang))"
         # 请求输出路径 | 默认为`输入路径.jl`
-        printstyled("            > out_path(default \"$path.jl\")="; color=:light_cyan, bold=true)
+        printstyled("            > out_path(default \"$default_out\")="; color=:light_cyan, bold=true)
         out_path = readline()
-        # 尝试编译
-        try_compile_notebook(path, isempty(out_path) ? "$path.jl" : out_path)
+        isempty(out_path) && (out_path = default_out) # 无⇒自动附加扩展名
+        try_compile_notebook(path, out_path)
     end
 end
 
