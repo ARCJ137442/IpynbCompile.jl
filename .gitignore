@@ -12,3 +12,6 @@
 
 # 私用文件
 *.private.*
+
+# 本地化配置
+Manifest.toml

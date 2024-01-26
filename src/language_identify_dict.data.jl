@@ -28,6 +28,7 @@
     :less               => "LESS|less"
     :lisp               => "LISP|lisp"
     :lua                => "Lua|lua"
+    :markdown           => "Markdown|markdown|md" # ! 近似为编程语言（用于Markdown单元格）
     :nim                => "Nim|nim"
     :objective_c        => "Objective-[Cc]|objective-[Cc]|[Oo]bj-[Cc]"
     :ocaml              => "OCaml|ocaml"
