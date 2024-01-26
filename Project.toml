@@ -1,7 +1,14 @@
 name = "IpynbCompile"
 uuid = "4eb781bf-a71e-403a-9d46-9d48649f04b2"
 authors = ["ARCJ137442 <61109168+ARCJ137442@users.noreply.github.com>"]
-version = "1.3.0"
+version = "1.3.1"
 
 [deps]
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+[extras]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "Dates"]
