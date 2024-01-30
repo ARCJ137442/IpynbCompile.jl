@@ -239,14 +239,13 @@ get_extension(lang::Symbol) = get(
 @info "" LANG_EXTENSION_DICT
 
 # %ignore-cell
-let rep(f, x, n) = n == 1 ? f(x) : rep(f, f(x), n-1),
-    path_RR = rep(dirname, @__DIR__(), 4),
+let path_examples(path) = joinpath(ROOT_PATH, "examples", path),
     notebooks = [
-        #= C =# joinpath(path_RR, raw"C\JupyterC\initial.ipynb")
-        #= Java =# joinpath(path_RR, raw"Java\IJava\initial.ipynb")
-        #= Julia =# joinpath(path_RR, raw"Julia\Julia×Jupyter\IpynbCompile.jl\src\compiler.ipynb")
-        #= Python =# joinpath(path_RR, raw"Python\小型模拟实验\Nilnormal&JordanForm.ipynb")
-        #= TypeScript =# joinpath(path_RR, raw"WEB\TypeScript\JupyterNotebook_test\initial.ipynb")
+        #= C =# path_examples("c.ipynb")
+        #= Java =# path_examples("java.ipynb")
+        #= Julia =# SELF_PATH # * 直接使用自身
+        #= Python =# path_examples("python.ipynb")
+        #= TypeScript =# path_examples("typescript.ipynb")
     ] .|> read_ipynb_json .|> IpynbNotebook
     @test all(identify_lang.(notebooks) .== [
         :c
@@ -584,8 +583,14 @@ end
 
 # %ignore-below
 
-let 引入路径 = joinpath(ROOT_PATH, "src", "%include.test.jl"),
-    预期引入内容 = read(引入路径, String),
+let 引入路径 = joinpath(ROOT_PATH, "test", "%include.test.jl")
+    # 放置测试脚本
+    预期引入内容 = """\
+    # 这是一段会被`# %include`引入编译后笔记本的内容
+    println("Hello World")\
+    """
+    ispath(引入路径) || write(引入路径, 预期引入内容)
+    # 现场编译
     引入后内容 = compile_code_lines(
         IpynbCell(; 
             cell_type="code", 
@@ -783,6 +788,17 @@ $(compile_cell(notebook.cells; lang, kwargs...))
 """ # ! `$(compile_notebook_head(notebook))`在原本的换行下再空一行，以便与后续单元格分隔
 
 """
+以「配对」方式进行展开，允许同时编译多个笔记本
+- 🎯支持形如`compile_notebook(笔记本1 => 目标1, 笔记本2 => 目标2)`的语法
+- 📌无论在此的「笔记本」「目标」路径还是其它的
+"""
+function compile_notebook(pairs::Vararg{Pair})
+    for pair in pairs
+        compile_notebook(first(pair), last(pair))
+    end
+end
+
+"""
 编译整个笔记本，并【写入】指定路径
 - @param notebook 要编译的笔记本对象
 - @param path 要写入的路径
@@ -960,13 +976,11 @@ let root_folder = PATH_SRC
         path = joinpath.(root, file_name)
         # * 只为Jupyter笔记本（`*.ipynb`）⇒编译
         endswith(path, ".ipynb") || continue
-        # 计算目标路径
+        # 计算目标路径 | 替换末尾扩展名
         new_path = replace(path, r".ipynb$" => ".jl") # 固定编译成Julia源码
         # 编译
         compile_notebook(
-            path,
-            # 替换末尾扩展名
-            new_path;
+            path => new_path # * 测试Pair
             # ! 根目录后续会由`path`自行指定
         )
         # 输出编译结果
