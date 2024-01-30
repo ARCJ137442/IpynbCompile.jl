@@ -1013,10 +1013,10 @@ if !contains(@__DIR__, "test") # 不能在测试代码中被重复调用
     )
 end
 
-# %ignore-cell # * 扫猫自身Markdown单元格，自动生成`README.md`
-"决定「单元格采集结束」的标识"
-FLAG_END = "<!-- README-end -->"
-FLAG_IGNORE = "<!-- README-ignored -->"
+# %ignore-cell # * 扫描自身Markdown单元格，自动生成`README.md`
+"决定「单元格采集结束」的标识" # ! 不包括结束处单元格
+FLAG_END = "<!-- README-end" # 只需要开头
+FLAG_IGNORE = "<!-- README-ignored" # 只需要开头
 
 # * 过滤Markdown单元格
 markdowns = filter(notebook.cells) do cell
@@ -1024,7 +1024,10 @@ markdowns = filter(notebook.cells) do cell
 end
 # * 截取Markdown单元格 | 直到开头有`FLAG_END`标记的行（不考虑换行符）
 README_END_INDEX = findlast(markdowns) do cell
-    !isempty(cell.source) && startswith(cell.source[begin], FLAG_END)
+    !isempty(cell.source) && any(
+        startswith(line, FLAG_END)
+        for line in cell.source
+    )
 end
 README_markdowns = markdowns[begin:README_END_INDEX-1]
 
@@ -1032,8 +1035,11 @@ README_markdowns = markdowns[begin:README_END_INDEX-1]
 README_markdown_TEXT = join((
     join(cell.source) * '\n' # ←这里需要加上换行
     for cell in README_markdowns
-    # 根据【空单元格】或【首行注释】进行忽略
-    if !(isempty(cell.source) || startswith(cell.source[begin], FLAG_IGNORE))
+    # * 根据【空单元格】或【任一行注释】进行忽略
+    if !(isempty(cell.source) || any(
+        startswith(line, FLAG_IGNORE)
+        for line in cell.source
+    ))
 ), '\n')
 
 # * 继续处理：缩进4→2，附加注释
