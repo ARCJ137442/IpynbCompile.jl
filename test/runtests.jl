@@ -222,7 +222,7 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 @info "" LANG_COMMENT_DICT_INLINE LANG_COMMENT_DICT_MULTILINE_HEAD LANG_COMMENT_DICT_MULTILINE_TAIL
 
 "【内部】编程语言⇒常用扩展名（不带`.`）"
-const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
+const LANG_EXTENSION_DICT = Dict{Symbol,String}(
     # ! 以下「特殊注释」需要在行首
 #= %inline-compiled =# include("./../src/language_extension_dict.data.jl")
     # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`

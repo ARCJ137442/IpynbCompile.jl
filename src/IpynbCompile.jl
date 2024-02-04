@@ -724,7 +724,7 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 
 # %% [64] code
 "【内部】编程语言⇒常用扩展名（不带`.`）"
-const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
+const LANG_EXTENSION_DICT = Dict{Symbol,String}(
     # ! 以下「特殊注释」需要在行首
 # ! be included in: IpynbCompile.jl @ module IpynbCompile
 # * 记录【未指定路径时】从语言到扩展名的映射 | 一般是常见扩展名 | 不带「.」 | 注释为【不确定】项
