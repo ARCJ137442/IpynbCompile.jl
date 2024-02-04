@@ -66,7 +66,7 @@ export IpynbNotebook, IpynbNotebookMetadata
 - 🎯规范化存储Jupyter Notebook的元数据
     - 根据官方文档，仅存储【已经确定存在】的「语言信息」和「内核信息」
 """
-@kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
+Base.@kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
     "语言信息"
     language_info::JSONDictAny
     "内核信息"
@@ -77,7 +77,7 @@ end
 定义一个Jupyter Notebook的notebook结构
 - 🎯规范化存储Jupyter Notebook的整体数据
 """
-@kwdef struct IpynbNotebook{Cell}
+Base.@kwdef struct IpynbNotebook{Cell}
     "单元格（类型后续会定义）"
     cells::Vector{Cell}
     "元信息"
