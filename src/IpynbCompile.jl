@@ -283,16 +283,16 @@ module IpynbCompile # 后续编译后会变为模块上下文
 
 
 # %% [34] markdown
-# ## 模块前置
+# ## 前置模块
 
 # %% [35] markdown
-# 导入库
+# ### 导入库
 
 # %% [36] code
 import JSON
 
 # %% [37] markdown
-# 预置语法糖
+# ### 预置语法糖
 
 # %% [38] code
 "JSON常用的字典"
@@ -302,12 +302,26 @@ const JSONDict{ValueType} = Dict{String,ValueType} where ValueType
 const JSONDictAny = JSONDict{Any}
 
 # %% [39] markdown
+# ### 兼容+注意事项
+
+# %% [40] code
+import Base: @kwdef # 兼容Julia 1.8⁻
+
+# %% [41] markdown
+# - 📌兼容 @ Julia **1.5⁺**：`include`自Julia **1.5**方可用
+# - 📌兼容 @ Julia **1.8⁻**：`Base.@kwdef`自Julia **1.9**方被导出
+#     - ⚠️禁止不引入直接使用`Base.@kwdef`
+# - 📌兼容 @ Julia **1.7⁻**：全局`const`自Julia **1.8**方能附带类型
+#     - ⚠️禁止在`const`定义的变量中标注类型（Julia运行时会自动推导）
+#     - 📄错误信息：`ERROR: LoadError: syntax: type declarations on global variables are not yet supported`
+
+# %% [42] markdown
 # ## 读取解析Jupyter笔记本（`.ipynb`文件）
 
-# %% [40] markdown
+# %% [43] markdown
 # ### 读取文件（JSON）
 
-# %% [41] code
+# %% [44] code
 export read_ipynb_json
 
 """
@@ -323,10 +337,10 @@ read_ipynb_json(path) =
 # ! ↓使用`# %ignore-line`让 编译器/解释器 忽略下一行
 
 
-# %% [42] markdown
+# %% [45] markdown
 # ### 解析文件元信息
 
-# %% [43] markdown
+# %% [46] markdown
 # Jupyter Notebook元数据 格式参考
 # 
 # ```yaml
@@ -351,7 +365,7 @@ read_ipynb_json(path) =
 # }
 # ```
 
-# %% [44] markdown
+# %% [47] markdown
 # Jupyter Notebook Cell 格式参考
 # 
 # 共有：
@@ -395,7 +409,7 @@ read_ipynb_json(path) =
 # }
 # ```
 
-# %% [45] markdown
+# %% [48] markdown
 # 当前Julia笔记本 元数据：
 # 
 # ```json
@@ -417,13 +431,13 @@ read_ipynb_json(path) =
 # （截止至2024-01-16）
 
 
-# %% [47] markdown
+# %% [50] markdown
 # ## 解析Jupyter笔记本（Julia `struct`）
 
-# %% [48] markdown
+# %% [51] markdown
 # ### 定义「笔记本」结构
 
-# %% [49] code
+# %% [52] code
 export IpynbNotebook, IpynbNotebookMetadata
 
 """
@@ -431,7 +445,7 @@ export IpynbNotebook, IpynbNotebookMetadata
 - 🎯规范化存储Jupyter Notebook的元数据
     - 根据官方文档，仅存储【已经确定存在】的「语言信息」和「内核信息」
 """
-Base.@kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
+@kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
     "语言信息"
     language_info::JSONDictAny
     "内核信息"
@@ -442,7 +456,7 @@ end
 定义一个Jupyter Notebook的notebook结构
 - 🎯规范化存储Jupyter Notebook的整体数据
 """
-Base.@kwdef struct IpynbNotebook{Cell}
+@kwdef struct IpynbNotebook{Cell}
     "单元格（类型后续会定义）"
     cells::Vector{Cell}
     "元信息"
@@ -486,22 +500,22 @@ IpynbNotebookMetadata(json::JSONDict) = IpynbNotebookMetadata(;
 # ! ↓使用`# %ignore-below`让 编译器/解释器 忽略后续内容
 
 
-# %% [50] markdown
+# %% [53] markdown
 # ### 读取笔记本 总函数
 
-# %% [51] markdown
+# %% [54] markdown
 # 根据路径读取笔记本
 
-# %% [52] code
+# %% [55] code
 export read_notebook
 
 "从路径读取Jupyter笔记本（`struct IpynbNotebook`）"
 read_notebook(path::AbstractString)::IpynbNotebook = IpynbNotebook(read_ipynb_json(path))
 
-# %% [53] markdown
+# %% [56] markdown
 # 方便引入笔记本的字符串宏
 
-# %% [54] code
+# %% [57] code
 export @notebook_str
 
 macro notebook_str(path::AbstractString)
@@ -509,15 +523,15 @@ macro notebook_str(path::AbstractString)
 end
 
 
-# %% [55] markdown
+# %% [58] markdown
 # ### 解析/生成 笔记本信息
 
-# %% [56] markdown
+# %% [59] markdown
 # #### 识别编程语言
 
-# %% [57] code
+# %% [60] code
 "【内部】编程语言⇒正则表达式 识别字典"
-const LANG_IDENTIFY_DICT::Dict{Symbol,Regex} = Dict{Symbol,Regex}(
+const LANG_IDENTIFY_DICT = Dict{Symbol,Regex}(
     lang => Regex("^(?:$regex_str)\$") # ! ←必须头尾精确匹配（不然就会把`JavaScript`认成`r`）
     for (lang::Symbol, regex_str::String) in
     # ! 以下「特殊注释」需要在行首
@@ -609,22 +623,22 @@ identify_lang(language_text::AbstractString) =
     end # ! 默认返回`nothing`
 
 
-# %% [58] markdown
+# %% [61] markdown
 # #### 根据编程语言生成注释
 # 
 # - 生成的注释会用于「行开头」识别
 #     - 如：`// %ignore-cell` (C系列)
 #     - 如：`# %ignore-cell` (Python/Julia)
 
-# %% [59] code
+# %% [62] code
 "【内部】编程语言⇒单行注释"
-const LANG_COMMENT_DICT_INLINE::Dict{Symbol,String} = Dict{Symbol,String}()
+const LANG_COMMENT_DICT_INLINE = Dict{Symbol,String}()
 
 "【内部】编程语言⇒多行注释开头"
-const LANG_COMMENT_DICT_MULTILINE_HEAD::Dict{Symbol,String} = Dict{Symbol,String}()
+const LANG_COMMENT_DICT_MULTILINE_HEAD = Dict{Symbol,String}()
 
 "【内部】编程语言⇒多行注释结尾"
-const LANG_COMMENT_DICT_MULTILINE_TAIL::Dict{Symbol,String} = Dict{Symbol,String}()
+const LANG_COMMENT_DICT_MULTILINE_TAIL = Dict{Symbol,String}()
 
 # * 遍历表格，生成列表
 # * 外部表格的数据结构：`Dict(语言 => [单行注释, [多行注释开头, 多行注释结尾]])`
@@ -705,10 +719,10 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 
 
 
-# %% [60] markdown
+# %% [63] markdown
 # #### 生成常用扩展名
 
-# %% [61] code
+# %% [64] code
 "【内部】编程语言⇒常用扩展名（不带`.`）"
 const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
     # ! 以下「特殊注释」需要在行首
@@ -784,17 +798,17 @@ get_extension(lang::Symbol) = get(
 
 
 
-# %% [62] markdown
+# %% [65] markdown
 # #### 解析/生成 测试
 
 
-# %% [64] markdown
+# %% [67] markdown
 # ### Notebook编译/头部注释
 # 
 # - 🎯标注 版本信息
 # - 🎯标注 各类元数据
 
-# %% [65] code
+# %% [68] code
 """
 【内部】从Notebook生成头部注释
 - ⚠️末尾有换行
@@ -820,16 +834,16 @@ $(generate_comment_inline(lang)) % nbformat_minor: $(notebook.nbformat_minor)
 
 
 
-# %% [66] markdown
+# %% [69] markdown
 # ## 解析处理单元格
 
-# %% [67] markdown
+# %% [70] markdown
 # ### 定义「单元格」
 
-# %% [68] markdown
+# %% [71] markdown
 # 定义结构类型
 
-# %% [69] code
+# %% [72] code
 export IpynbCell
 
 """
@@ -867,10 +881,10 @@ struct IpynbCell
     )...)
 end
 
-# %% [70] markdown
+# %% [73] markdown
 # 定义快捷字符串宏
 
-# %% [71] code
+# %% [74] code
 export @cell_str
 
 "🎯将字符串拆分成单元格各行（区分末尾换行）"
@@ -907,23 +921,23 @@ end
 
 
 
-# %% [72] markdown
+# %% [75] markdown
 # 结合笔记本，重定向&调用测试处理
 
-# %% [73] code
+# %% [76] code
 # ! 在此重定向，以便后续外部调用
 "重定向「笔记本」的默认「单元格」类型"
 IpynbNotebook(json) = IpynbNotebook{IpynbCell}(json)
 
 
 
-# %% [74] markdown
+# %% [77] markdown
 # ## 编译单元格
 
-# %% [75] markdown
+# %% [78] markdown
 # ### 编译/入口
 
-# %% [76] code
+# %% [79] code
 export compile_cell
 
 """
@@ -958,10 +972,10 @@ compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
         for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
     ), '\n')
 
-# %% [77] markdown
+# %% [80] markdown
 # ### 编译/单元格标头
 
-# %% [78] code
+# %% [81] code
 """
 【内部】对整个单元格的「类型标头」编译
 - 🎯生成一行注释，标识单元格
@@ -984,14 +998,14 @@ $(cell.cell_type)
 
 
 
-# %% [79] markdown
+# %% [82] markdown
 # ### 编译/代码
 
 
-# %% [81] markdown
+# %% [84] markdown
 # 主编译方法
 
-# %% [82] code
+# %% [85] code
 """
 对代码的编译
 - @param cell 所需编译的单元格
@@ -1110,10 +1124,10 @@ end
 
 
 
-# %% [83] markdown
+# %% [86] markdown
 # ### 编译/Markdown
 
-# %% [84] code
+# %% [87] code
 """
 对Markdown的编译
 - 📌主要方法：转换成多个单行注释
@@ -1148,10 +1162,10 @@ end
 
 
 
-# %% [85] markdown
+# %% [88] markdown
 # ## 解析执行单元格
 
-# %% [86] markdown
+# %% [89] markdown
 # 🎯将单元格解析**编译**成Julia表达式，并可直接作为代码执行
 # - 【核心】解释：`parse_cell`
 #     - 📌基本是`compile_cell` ∘ `Meta.parse`的复合
@@ -1163,7 +1177,7 @@ end
 #     - 📌基本是`parse_cell` ∘ `eval`的复合
 #     - ⚙️可任意指定其中的`eval`函数
 
-# %% [87] code
+# %% [90] code
 export parse_cell, tryparse_cell, eval_cell
 
 """
@@ -1239,13 +1253,13 @@ eval_cell(code_or_codes; eval_function=Main.eval, kwargs...) = eval_function(
 
 
 
-# %% [89] markdown
+# %% [92] markdown
 # ## 编译解析笔记本
 
-# %% [90] markdown
+# %% [93] markdown
 # 编译笔记本
 
-# %% [91] code
+# %% [94] code
 export compile_notebook
 
 """
@@ -1326,10 +1340,10 @@ end
 
 
 
-# %% [92] markdown
+# %% [95] markdown
 # 解析笔记本
 
-# %% [93] code
+# %% [96] code
 export parse_notebook, tryparse_notebook
 
 """
@@ -1364,13 +1378,13 @@ tryparse_notebook(args...; kwargs...) =
 
 
 
-# %% [94] markdown
+# %% [97] markdown
 # ## 执行笔记本
 
-# %% [95] markdown
+# %% [98] markdown
 # 执行笔记本
 
-# %% [96] code
+# %% [99] code
 export eval_notebook, eval_notebook_by_cell
 
 """
@@ -1403,10 +1417,10 @@ end
 
 # ! 测试代码放在最后边
 
-# %% [97] markdown
+# %% [100] markdown
 # 引入笔记本
 
-# %% [98] code
+# %% [101] code
 export include_notebook, include_notebook_by_cell
 
 """
@@ -1442,10 +1456,10 @@ include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cel
 
 
 
-# %% [99] markdown
+# %% [102] markdown
 # ## 关闭模块上下文
 
-# %% [100] code
+# %% [103] code
 # ! ↓这后边注释的代码只有在编译后才会被执行
 # ! 仍然使用多行注释语法，以便统一格式
 end # module

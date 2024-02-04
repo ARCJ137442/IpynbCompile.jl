@@ -20,6 +20,8 @@ const JSONDict{ValueType} = Dict{String,ValueType} where ValueType
 "默认解析出来的JSON字典（与`JSONDict`有本质不同，会影响到后续方法分派，并可能导致歧义）"
 const JSONDictAny = JSONDict{Any}
 
+import Base: @kwdef # 兼容Julia 1.8⁻
+
 #= %only-compiled # ! 模块上下文：导出元素
 export read_ipynb_json
 %only-compiled =#
@@ -66,7 +68,7 @@ export IpynbNotebook, IpynbNotebookMetadata
 - 🎯规范化存储Jupyter Notebook的元数据
     - 根据官方文档，仅存储【已经确定存在】的「语言信息」和「内核信息」
 """
-Base.@kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
+@kwdef struct IpynbNotebookMetadata # !【2024-01-14 16:09:35】目前只发现这两种信息
     "语言信息"
     language_info::JSONDictAny
     "内核信息"
@@ -77,7 +79,7 @@ end
 定义一个Jupyter Notebook的notebook结构
 - 🎯规范化存储Jupyter Notebook的整体数据
 """
-Base.@kwdef struct IpynbNotebook{Cell}
+@kwdef struct IpynbNotebook{Cell}
     "单元格（类型后续会定义）"
     cells::Vector{Cell}
     "元信息"
@@ -147,7 +149,7 @@ end
 @macroexpand notebook"IpynbCompile.ipynb"
 
 "【内部】编程语言⇒正则表达式 识别字典"
-const LANG_IDENTIFY_DICT::Dict{Symbol,Regex} = Dict{Symbol,Regex}(
+const LANG_IDENTIFY_DICT = Dict{Symbol,Regex}(
     lang => Regex("^(?:$regex_str)\$") # ! ←必须头尾精确匹配（不然就会把`JavaScript`认成`r`）
     for (lang::Symbol, regex_str::String) in
     # ! 以下「特殊注释」需要在行首
@@ -184,13 +186,13 @@ identify_lang(language_text::AbstractString) =
 # %ignore-below # ! 测试代码在最下边
 
 "【内部】编程语言⇒单行注释"
-const LANG_COMMENT_DICT_INLINE::Dict{Symbol,String} = Dict{Symbol,String}()
+const LANG_COMMENT_DICT_INLINE = Dict{Symbol,String}()
 
 "【内部】编程语言⇒多行注释开头"
-const LANG_COMMENT_DICT_MULTILINE_HEAD::Dict{Symbol,String} = Dict{Symbol,String}()
+const LANG_COMMENT_DICT_MULTILINE_HEAD = Dict{Symbol,String}()
 
 "【内部】编程语言⇒多行注释结尾"
-const LANG_COMMENT_DICT_MULTILINE_TAIL::Dict{Symbol,String} = Dict{Symbol,String}()
+const LANG_COMMENT_DICT_MULTILINE_TAIL = Dict{Symbol,String}()
 
 # * 遍历表格，生成列表
 # * 外部表格的数据结构：`Dict(语言 => [单行注释, [多行注释开头, 多行注释结尾]])`
