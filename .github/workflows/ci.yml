@@ -16,11 +16,7 @@ jobs:
       matrix:
         version:
           # Versions below 1.5 cause of compat@`include`:
-          - "1.5"
-          - "1.6"
           - "1.7"
-          - "1.8"
-          - "1.9"
           - "1" # Leave this line unchanged. '1' will automatically expand to the latest stable 1.x release of Julia.
           - "nightly"
         os:

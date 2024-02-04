@@ -1,5 +1,12 @@
-<!-- ⚠️该文件由 `IpynbCompile.ipynb` 自动生成于 2024-02-04T13:39:49.938，无需手动修改 -->
+<!-- ⚠️该文件由 `IpynbCompile.ipynb` 自动生成于 2024-02-04T13:56:00.486，无需手动修改 -->
 # IpynbCompile.jl: 一个实用的Jupyter笔记本构建工具
+
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+[![Static Badge](https://img.shields.io/badge/julia-package?logo=julia&label=1.7%2B)](https://julialang.org/)
+
+[![CI status](https://github.com/ARCJ137442/IpynbCompile.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/IpynbCompile.jl/actions/workflows/ci.yml)
+
+该项目使用[语义化版本 2.0.0](https://semver.org/)进行版本号管理。
 
 ## 主要功能
 

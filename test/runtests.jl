@@ -763,7 +763,12 @@ eval_cell(code_or_codes; eval_function=Main.eval, kwargs...) = eval_function(
 # %ignore-below
 
 # 执行其中一个代码单元格 # * 参考「预置语法糖」
-eval_cell(codes[3]; lang=:julia)::Base.Docs.Binding
+let cell_const = codes[findfirst(codes) do cell
+        cell.cell_type == "code" &&
+            contains(cell.source[end], "const")
+    end]
+    eval_cell(cell_const; lang=:julia)::Base.Docs.Binding
+end
 
 # 尝试对每个单元格进行解析
 [
@@ -992,8 +997,7 @@ let OUT_LIB_FILE = "IpynbCompile.jl" # 直接作为库的主文件
     # !不能在`runtests.jl`中运行
     contains(@__DIR__, "test") && return
 
-    # * 测试Pair编译
-    write_bytes = compile_notebook(SELF_PATH => joinpath(ROOT_PATH, "src", OUT_LIB_FILE))
+    write_bytes = compile_notebook(SELF_PATH, joinpath(ROOT_PATH, "src", OUT_LIB_FILE))
     printstyled(
         "✅Jupyter笔记本「主模块」自编译成功！\n（共写入 $write_bytes 个字节）\n";
         color=:light_yellow, bold=true

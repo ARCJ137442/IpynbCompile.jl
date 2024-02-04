@@ -12,12 +12,20 @@
 # （✨执行其中所有单元格，可自动构建、测试并生成相应`.jl`源码、测试文件与README！）
 
 # %% [3] markdown
-# ## 主要功能
+# [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+# [![Static Badge](https://img.shields.io/badge/julia-package?logo=julia&label=1.7%2B)](https://julialang.org/)
+# 
+# [![CI status](https://github.com/ARCJ137442/IpynbCompile.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/IpynbCompile.jl/actions/workflows/ci.yml)
+# 
+# 该项目使用[语义化版本 2.0.0](https://semver.org/)进行版本号管理。
 
 # %% [4] markdown
-# ### 简介
+# ## 主要功能
 
 # %% [5] markdown
+# ### 简介
+
+# %% [6] markdown
 # 📍主要功能：为 [***Jupyter***](https://jupyter.org/) 笔记本（`.ipynb`文件）提供一套特定的注释语法，以支持 **编译转换**&**解释执行** 功能，扩展其应用的可能性
 # 
 # - 📌可【打开】并【解析】Jupyter笔记本：提供基本的「Jupyter笔记本」「Jupyter笔记本元数据」「Jupyter笔记本单元格」数据结构定义
@@ -52,13 +60,13 @@
 #     - 引入笔记本 `include_notebook`
 #         - 逐单元格版本：`include_notebook_by_cell`
 
-# %% [6] markdown
+# %% [7] markdown
 # ✨创新点：**使用多样的「特殊注释」机制，让使用者能更灵活、更便捷地编译Jupyter笔记本，并能将其【交互式】优势用于库的编写之中**
 
-# %% [7] markdown
+# %% [8] markdown
 # ### 重要机制：单元格「特殊注释」
 
-# %% [8] markdown
+# %% [9] markdown
 # 简介：单元格的主要「特殊注释」及其作用（以`# 单行注释` `#= 块注释 =#`为例）
 # 
 # - `# %ignore-line` 忽略下一行
@@ -70,19 +78,19 @@
 # - `%only-compiled =#` 仅编译后可用（尾）
 # - `# %include <路径>` 引入指定路径的文件内容，替代一整行注释
 
-# %% [9] markdown
+# %% [10] markdown
 # ✨**该笔记本自身**，就是一个好的用法参考来源
 
-# %% [10] markdown
+# %% [11] markdown
 # #### 各个「特殊注释」的用法
 
-# %% [11] markdown
+# %% [12] markdown
 # ##### 忽略单行
 
-# %% [12] markdown
+# %% [13] markdown
 # 📌简要用途：忽略**下一行**代码
 
-# %% [13] markdown
+# %% [14] markdown
 # 编译前@笔记本单元格：
 # 
 # ```julia
@@ -99,10 +107,10 @@
 # [["下边也要被编译"]]
 # ```
 
-# %% [14] markdown
+# %% [15] markdown
 # ##### 忽略下面所有行
 
-# %% [15] markdown
+# %% [16] markdown
 # 编译前@笔记本单元格
 # 
 # ```julia
@@ -121,10 +129,10 @@
 # [["上边的代码正常编译"]]
 # ```
 
-# %% [16] markdown
+# %% [17] markdown
 # ##### 忽略整个单元格
 
-# %% [17] markdown
+# %% [18] markdown
 # 编译前@笔记本单元格：
 # 
 # ```julia
@@ -141,16 +149,16 @@
 # 
 # ↑空字串
 
-# %% [18] markdown
+# %% [19] markdown
 # 📌一般习惯将 `# %ignore-cell` 放在第一行
 
-# %% [19] markdown
+# %% [20] markdown
 # ##### 忽略代码块
 
-# %% [20] markdown
+# %% [21] markdown
 # 📝即「块忽略」
 
-# %% [21] markdown
+# %% [22] markdown
 # 编译前@笔记本单元格：
 # 
 # ```julia
@@ -169,15 +177,15 @@
 # [["下面的代码都会被编译"]]
 # ```
 
-# %% [22] markdown
+# %% [23] markdown
 # ##### 仅编译后可用
 
-# %% [23] markdown
+# %% [24] markdown
 # 主要用途：包装 `module` 等代码，实现编译后模块上下文
 # 
 # - ⚠️对于 **Python** 等【依赖缩进定义上下文】的语言，难以进行此类编译
 
-# %% [24] markdown
+# %% [25] markdown
 # 编译前@笔记本单元格：
 # 
 # ```julia
@@ -206,15 +214,15 @@
 # [["下面的代码正常编译，并且会随着笔记本一起执行"]]
 # ```
 
-# %% [25] markdown
+# %% [26] markdown
 # ##### 文件引入
 
-# %% [26] markdown
+# %% [27] markdown
 # 主要用途：结合「仅编译后可用」实现「外部代码内联」
 # 
 # - 如：集成某些**中小型映射表**，整合零散源码文件……
 
-# %% [27] markdown
+# %% [28] markdown
 # 编译前@笔记本单元格：
 # 
 # ```julia
@@ -252,26 +260,26 @@
 # 
 # 📝Julia的「空白符无关性」允许在等号后边大范围附带注释的空白
 
-# %% [28] markdown
+# %% [29] markdown
 # ## 参考
 
-# %% [29] markdown
+# %% [30] markdown
 # - 本Julia库的灵感来源：[Promises.jl/src/notebook.jl](https://github.com/fonsp/Promises.jl/blob/main/src/notebook.jl)
 #     - 源库使用了 [**Pluto.jl**](https://github.com/fonsp/Pluto.jl) 的「笔记本导出」功能
 # - **Jupyter Notebook** 文件格式（JSON）：[🔗nbformat.readthedocs.io](https://nbformat.readthedocs.io/en/latest/format_description.html#notebook-file-format)
 
-# %% [30] markdown
+# %% [31] markdown
 # <!-- README-end -->
 # 
 # ⚠️该单元格首行注释用于截止生成`README.md`（包括自身）
 
-# %% [31] markdown
+# %% [32] markdown
 # ## 建立模块上下文
 
-# %% [32] markdown
+# %% [33] markdown
 # 📌使用 `# %only-compiled` 控制 `module` 代码，生成模块上下文
 
-# %% [33] code
+# %% [34] code
 # ! ↓这后边注释的代码只有在编译后才会被执行
 # ! 使用多行注释/块注释的语法，
 # !     以`#= %only-compiled`行*开头*
@@ -282,46 +290,51 @@ IpynbCompile 主模块
 module IpynbCompile # 后续编译后会变为模块上下文
 
 
-# %% [34] markdown
+# %% [35] markdown
 # ## 前置模块
 
-# %% [35] markdown
+# %% [36] markdown
 # ### 导入库
 
-# %% [36] code
+# %% [37] code
 import JSON
 
-# %% [37] markdown
+# %% [38] markdown
 # ### 预置语法糖
 
-# %% [38] code
+# %% [39] code
 "JSON常用的字典"
 const JSONDict{ValueType} = Dict{String,ValueType} where ValueType
 
 "默认解析出来的JSON字典（与`JSONDict`有本质不同，会影响到后续方法分派，并可能导致歧义）"
 const JSONDictAny = JSONDict{Any}
 
-# %% [39] markdown
+# %% [40] markdown
 # ### 兼容+注意事项
 
-# %% [40] code
+# %% [41] code
 import Base: @kwdef # 兼容Julia 1.8⁻
 
-# %% [41] markdown
-# - 📌兼容 @ Julia **1.5⁺**：`include`自Julia **1.5**方可用
-# - 📌兼容 @ Julia **1.8⁻**：`Base.@kwdef`自Julia **1.9**方被导出
-#     - ⚠️禁止不引入直接使用`Base.@kwdef`
-# - 📌兼容 @ Julia **1.7⁻**：全局`const`自Julia **1.8**方能附带类型
-#     - ⚠️禁止在`const`定义的变量中标注类型（Julia运行时会自动推导）
-#     - 📄错误信息：`ERROR: LoadError: syntax: type declarations on global variables are not yet supported`
-
 # %% [42] markdown
-# ## 读取解析Jupyter笔记本（`.ipynb`文件）
+# - ✅兼容 @ Julia **1.5⁺**：`include`自Julia **1.5**方可用
+#     - 🔒锁定最低Julia版本为**1.5**
+# - ❌兼容 @ Julia **1.6⁻**：「多行字符串」自Julia **1.7**方可使用"\【换行】"取消换行
+#     - 📄错误信息：`LoadError: syntax: invalid escape sequence`
+#     - 🔒2024-02-04：锁定Julia版本为**1.7⁺**
+# - ✅兼容 @ Julia **1.8⁻**：`Base.@kwdef`自Julia **1.9**方被导出
+#     - 📄错误信息：`LoadError: UndefVarError: @kwdef not defined`
+#     - ⚠️禁止不引入直接使用`Base.@kwdef`
+# - ✅兼容 @ Julia **1.7⁻**：全局`const`自Julia **1.8**方能附带类型
+#     - 📄错误信息：`LoadError: syntax: type declarations on global variables are not yet supported`
+#     - ⚠️禁止在`const`定义的变量中标注类型（Julia运行时会自动推导）
 
 # %% [43] markdown
+# ## 读取解析Jupyter笔记本（`.ipynb`文件）
+
+# %% [44] markdown
 # ### 读取文件（JSON）
 
-# %% [44] code
+# %% [45] code
 export read_ipynb_json
 
 """
@@ -337,10 +350,10 @@ read_ipynb_json(path) =
 # ! ↓使用`# %ignore-line`让 编译器/解释器 忽略下一行
 
 
-# %% [45] markdown
+# %% [46] markdown
 # ### 解析文件元信息
 
-# %% [46] markdown
+# %% [47] markdown
 # Jupyter Notebook元数据 格式参考
 # 
 # ```yaml
@@ -365,7 +378,7 @@ read_ipynb_json(path) =
 # }
 # ```
 
-# %% [47] markdown
+# %% [48] markdown
 # Jupyter Notebook Cell 格式参考
 # 
 # 共有：
@@ -409,7 +422,7 @@ read_ipynb_json(path) =
 # }
 # ```
 
-# %% [48] markdown
+# %% [49] markdown
 # 当前Julia笔记本 元数据：
 # 
 # ```json
@@ -431,13 +444,13 @@ read_ipynb_json(path) =
 # （截止至2024-01-16）
 
 
-# %% [50] markdown
+# %% [51] markdown
 # ## 解析Jupyter笔记本（Julia `struct`）
 
-# %% [51] markdown
+# %% [52] markdown
 # ### 定义「笔记本」结构
 
-# %% [52] code
+# %% [53] code
 export IpynbNotebook, IpynbNotebookMetadata
 
 """
@@ -500,22 +513,22 @@ IpynbNotebookMetadata(json::JSONDict) = IpynbNotebookMetadata(;
 # ! ↓使用`# %ignore-below`让 编译器/解释器 忽略后续内容
 
 
-# %% [53] markdown
+# %% [54] markdown
 # ### 读取笔记本 总函数
 
-# %% [54] markdown
+# %% [55] markdown
 # 根据路径读取笔记本
 
-# %% [55] code
+# %% [56] code
 export read_notebook
 
 "从路径读取Jupyter笔记本（`struct IpynbNotebook`）"
 read_notebook(path::AbstractString)::IpynbNotebook = IpynbNotebook(read_ipynb_json(path))
 
-# %% [56] markdown
+# %% [57] markdown
 # 方便引入笔记本的字符串宏
 
-# %% [57] code
+# %% [58] code
 export @notebook_str
 
 macro notebook_str(path::AbstractString)
@@ -523,13 +536,13 @@ macro notebook_str(path::AbstractString)
 end
 
 
-# %% [58] markdown
+# %% [59] markdown
 # ### 解析/生成 笔记本信息
 
-# %% [59] markdown
+# %% [60] markdown
 # #### 识别编程语言
 
-# %% [60] code
+# %% [61] code
 "【内部】编程语言⇒正则表达式 识别字典"
 const LANG_IDENTIFY_DICT = Dict{Symbol,Regex}(
     lang => Regex("^(?:$regex_str)\$") # ! ←必须头尾精确匹配（不然就会把`JavaScript`认成`r`）
@@ -623,14 +636,14 @@ identify_lang(language_text::AbstractString) =
     end # ! 默认返回`nothing`
 
 
-# %% [61] markdown
+# %% [62] markdown
 # #### 根据编程语言生成注释
 # 
 # - 生成的注释会用于「行开头」识别
 #     - 如：`// %ignore-cell` (C系列)
 #     - 如：`# %ignore-cell` (Python/Julia)
 
-# %% [62] code
+# %% [63] code
 "【内部】编程语言⇒单行注释"
 const LANG_COMMENT_DICT_INLINE = Dict{Symbol,String}()
 
@@ -719,10 +732,10 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 
 
 
-# %% [63] markdown
+# %% [64] markdown
 # #### 生成常用扩展名
 
-# %% [64] code
+# %% [65] code
 "【内部】编程语言⇒常用扩展名（不带`.`）"
 const LANG_EXTENSION_DICT = Dict{Symbol,String}(
     # ! 以下「特殊注释」需要在行首
@@ -798,17 +811,17 @@ get_extension(lang::Symbol) = get(
 
 
 
-# %% [65] markdown
+# %% [66] markdown
 # #### 解析/生成 测试
 
 
-# %% [67] markdown
+# %% [68] markdown
 # ### Notebook编译/头部注释
 # 
 # - 🎯标注 版本信息
 # - 🎯标注 各类元数据
 
-# %% [68] code
+# %% [69] code
 """
 【内部】从Notebook生成头部注释
 - ⚠️末尾有换行
@@ -834,16 +847,16 @@ $(generate_comment_inline(lang)) % nbformat_minor: $(notebook.nbformat_minor)
 
 
 
-# %% [69] markdown
+# %% [70] markdown
 # ## 解析处理单元格
 
-# %% [70] markdown
+# %% [71] markdown
 # ### 定义「单元格」
 
-# %% [71] markdown
+# %% [72] markdown
 # 定义结构类型
 
-# %% [72] code
+# %% [73] code
 export IpynbCell
 
 """
@@ -881,10 +894,10 @@ struct IpynbCell
     )...)
 end
 
-# %% [73] markdown
+# %% [74] markdown
 # 定义快捷字符串宏
 
-# %% [74] code
+# %% [75] code
 export @cell_str
 
 "🎯将字符串拆分成单元格各行（区分末尾换行）"
@@ -921,23 +934,23 @@ end
 
 
 
-# %% [75] markdown
+# %% [76] markdown
 # 结合笔记本，重定向&调用测试处理
 
-# %% [76] code
+# %% [77] code
 # ! 在此重定向，以便后续外部调用
 "重定向「笔记本」的默认「单元格」类型"
 IpynbNotebook(json) = IpynbNotebook{IpynbCell}(json)
 
 
 
-# %% [77] markdown
+# %% [78] markdown
 # ## 编译单元格
 
-# %% [78] markdown
+# %% [79] markdown
 # ### 编译/入口
 
-# %% [79] code
+# %% [80] code
 export compile_cell
 
 """
@@ -972,10 +985,10 @@ compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
         for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
     ), '\n')
 
-# %% [80] markdown
+# %% [81] markdown
 # ### 编译/单元格标头
 
-# %% [81] code
+# %% [82] code
 """
 【内部】对整个单元格的「类型标头」编译
 - 🎯生成一行注释，标识单元格
@@ -998,14 +1011,14 @@ $(cell.cell_type)
 
 
 
-# %% [82] markdown
+# %% [83] markdown
 # ### 编译/代码
 
 
-# %% [84] markdown
+# %% [85] markdown
 # 主编译方法
 
-# %% [85] code
+# %% [86] code
 """
 对代码的编译
 - @param cell 所需编译的单元格
@@ -1124,10 +1137,10 @@ end
 
 
 
-# %% [86] markdown
+# %% [87] markdown
 # ### 编译/Markdown
 
-# %% [87] code
+# %% [88] code
 """
 对Markdown的编译
 - 📌主要方法：转换成多个单行注释
@@ -1162,10 +1175,10 @@ end
 
 
 
-# %% [88] markdown
+# %% [89] markdown
 # ## 解析执行单元格
 
-# %% [89] markdown
+# %% [90] markdown
 # 🎯将单元格解析**编译**成Julia表达式，并可直接作为代码执行
 # - 【核心】解释：`parse_cell`
 #     - 📌基本是`compile_cell` ∘ `Meta.parse`的复合
@@ -1177,7 +1190,7 @@ end
 #     - 📌基本是`parse_cell` ∘ `eval`的复合
 #     - ⚙️可任意指定其中的`eval`函数
 
-# %% [90] code
+# %% [91] code
 export parse_cell, tryparse_cell, eval_cell
 
 """
@@ -1253,13 +1266,13 @@ eval_cell(code_or_codes; eval_function=Main.eval, kwargs...) = eval_function(
 
 
 
-# %% [92] markdown
+# %% [93] markdown
 # ## 编译解析笔记本
 
-# %% [93] markdown
+# %% [94] markdown
 # 编译笔记本
 
-# %% [94] code
+# %% [95] code
 export compile_notebook
 
 """
@@ -1340,10 +1353,10 @@ end
 
 
 
-# %% [95] markdown
+# %% [96] markdown
 # 解析笔记本
 
-# %% [96] code
+# %% [97] code
 export parse_notebook, tryparse_notebook
 
 """
@@ -1378,13 +1391,13 @@ tryparse_notebook(args...; kwargs...) =
 
 
 
-# %% [97] markdown
+# %% [98] markdown
 # ## 执行笔记本
 
-# %% [98] markdown
+# %% [99] markdown
 # 执行笔记本
 
-# %% [99] code
+# %% [100] code
 export eval_notebook, eval_notebook_by_cell
 
 """
@@ -1417,10 +1430,10 @@ end
 
 # ! 测试代码放在最后边
 
-# %% [100] markdown
+# %% [101] markdown
 # 引入笔记本
 
-# %% [101] code
+# %% [102] code
 export include_notebook, include_notebook_by_cell
 
 """
@@ -1456,10 +1469,10 @@ include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cel
 
 
 
-# %% [102] markdown
+# %% [103] markdown
 # ## 关闭模块上下文
 
-# %% [103] code
+# %% [104] code
 # ! ↓这后边注释的代码只有在编译后才会被执行
 # ! 仍然使用多行注释语法，以便统一格式
 end # module
