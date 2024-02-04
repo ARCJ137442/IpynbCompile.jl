@@ -705,11 +705,9 @@ end
 @param cells 单元格序列
 @param parse_function 解析函数（替代原先`Meta.parseall`的位置）
 @param kwargs 附加参数
-@return 解析后的Julia表达式 | nothing（不可执行）
+@return 解析后的Julia表达式（可能含有错误的表达式`:error`）
 """
 function parse_cell(cells::Vector{IpynbCell}; parse_function = Meta.parseall, kwargs...)
-
-    # 只有类型为 code 才执行解析
     return parse_function(
         # 预先编译所有代码单元格，然后连接成一个字符串
         join(
@@ -719,9 +717,6 @@ function parse_cell(cells::Vector{IpynbCell}; parse_function = Meta.parseall, kw
             if cell.cell_type == "code"
         )
     )
-
-    # ! 默认不可执行
-    return nothing
 end
 
 """
@@ -735,7 +730,7 @@ tryparse_cell(args...; kwargs...) = try
     parse_cell(args...; kwargs...)
 catch e
     @warn e
-    Base.showerror(stderr, e, Base.catch_backtrace())
+    showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
     nothing
 end
 
@@ -743,11 +738,12 @@ end
 执行单元格
 - 🎯执行解析后的单元格（序列）
 - @param code_or_codes 单元格 | 单元格序列
-- @param eval_function 执行函数（默认为`eval`）
+- @param eval_function 执行函数
+    - @default 默认为`Main.eval`，在全局主模块上下文执行
 - @param kwargs 附加参数
 - @return 执行后表达式的值
 """
-eval_cell(code_or_codes; eval_function=eval, kwargs...) = eval_function(
+eval_cell(code_or_codes; eval_function=Main.eval, kwargs...) = eval_function(
     parse_cell(code_or_codes; kwargs...)
 )
 
@@ -849,21 +845,53 @@ end
 compile_notebook(notebook) |> print
 
 #= %only-compiled # ! 模块上下文：导出元素
+export parse_notebook, tryparse_notebook
+%only-compiled =#
+
+"""
+解析笔记本
+@param notebook 笔记本
+@param parse_function 解析函数（替代原先`Meta.parseall`的位置）
+@param kwargs 附加参数
+@return 解析后的Julia表达式（可能含有错误的表达式`:error`）
+"""
+function parse_notebook(notebook::IpynbNotebook; parse_function = Meta.parseall, kwargs...)
+    return parse_function(
+        # 预先编译整个笔记本
+        compile_notebook(notebook; kwargs)
+    )
+end
+
+"""
+尝试解析笔记本
+- 📌用法同`parse_notebook`，但会在解析报错时返回`nothing`
+    - ⚠️此中「解析报错」≠「解析过程出现错误」
+        - 📝解析错误的代码会被`Meta.parseall`包裹进类似`Expr(错误)`的表达式中
+        - 例如：`Expr(:incomplete, "incomplete: premature end of input")`
+"""
+tryparse_notebook(args...; kwargs...) = try
+    parse_notebook(args...; kwargs...)
+catch e
+    @warn e
+    showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
+    nothing
+end
+
+# %ignore-below
+@test tryparse_notebook(notebook) isa Expr
+
+#= %only-compiled # ! 模块上下文：导出元素
 export eval_notebook, eval_notebook_by_cell
 %only-compiled =#
 
 """
 【整个】解释并执行Jupyter笔记本
-- 📌直接使用`eval_cell`对笔记本的所有单元格进行解释执行
+- 📌先解析整个笔记本，然后一次性执行所有代码
     - 可以实现一些「编译后可用」的「上下文相关代码」
         - 如「将全笔记本代码打包成一个模块」
 """
-eval_notebook(notebook::IpynbNotebook; kwargs...) = eval_cell(
-    notebook.cells;
-    # 自动识别语言
-    lang=identify_lang(notebook),
-    # 其它附加参数（如「编译根目录」）
-    kwargs...
+eval_notebook(notebook::IpynbNotebook; eval_function=Main.eval) = eval_function(
+    parse_notebook(notebook)
 )
 
 """
@@ -948,7 +976,8 @@ let OUT_LIB_FILE = "IpynbCompile.jl" # 直接作为库的主文件
     # !不能在`runtests.jl`中运行
     contains(@__DIR__, "test") && return
     
-    write_bytes = compile_notebook(SELF_PATH, joinpath(ROOT_PATH, "src", OUT_LIB_FILE))
+    # * 测试Pair编译
+    write_bytes = compile_notebook(SELF_PATH => joinpath(ROOT_PATH, "src", OUT_LIB_FILE))
     printstyled(
         "✅Jupyter笔记本「主模块」自编译成功！\n（共写入 $write_bytes 个字节）\n";
         color=:light_yellow, bold=true

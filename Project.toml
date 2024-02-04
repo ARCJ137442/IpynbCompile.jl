@@ -1,7 +1,7 @@
 name = "IpynbCompile"
 uuid = "4eb781bf-a71e-403a-9d46-9d48649f04b2"
 authors = ["ARCJ137442 <61109168+ARCJ137442@users.noreply.github.com>"]
-version = "1.4.0"
+version = "1.5.0"
 
 [deps]
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
