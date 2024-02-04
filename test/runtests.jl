@@ -29,9 +29,10 @@ export read_ipynb_json
 - @param path .ipynb文件路径
 - @return .ipynb文件内容（JSON文本→Julia对象）
 """
-read_ipynb_json(path) = open(path, "r") do f
-    read(f, String) |> JSON.parse
-end
+read_ipynb_json(path) =
+    open(path, "r") do f
+        read(f, String) |> JSON.parse
+    end
 
 # ! ↓使用`# %ignore-line`让 编译器/解释器 忽略下一行
 # %ignore-line
@@ -49,6 +50,7 @@ notebook_json = read_ipynb_json(SELF_PATH)
 
 let metadata = notebook_json["metadata"],
     var"metadata.language_info" = metadata["language_info"]
+
     var"metadata.kernelspec" = metadata["kernelspec"]
     @info "notebook_json" notebook_json
     @info "notebook_json.metadata" metadata
@@ -148,12 +150,11 @@ end
 const LANG_IDENTIFY_DICT::Dict{Symbol,Regex} = Dict{Symbol,Regex}(
     lang => Regex("^(?:$regex_str)\$") # ! ←必须头尾精确匹配（不然就会把`JavaScript`认成`r`）
     for (lang::Symbol, regex_str::String) in
-# ! 以下「特殊注释」需要在行首
-# * 下方内容是「执行时动态引入，编译时静态内联」
+    # ! 以下「特殊注释」需要在行首
+    # * 下方内容是「执行时动态引入，编译时静态内联」
 #= %inline-compiled =# include("./../src/language_identify_dict.data.jl")
-# !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
+    # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
-
 
 """
 【内部】识别笔记本的编程语言
@@ -176,9 +177,10 @@ identify_lang(notebook::IpynbNotebook) = identify_lang(
         )
     )
 )
-identify_lang(language_text::AbstractString) = findfirst(LANG_IDENTIFY_DICT) do regex
-    contains(language_text, regex)
-end # ! 默认返回`nothing`
+identify_lang(language_text::AbstractString) =
+    findfirst(LANG_IDENTIFY_DICT) do regex
+        contains(language_text, regex)
+    end # ! 默认返回`nothing`
 # %ignore-below # ! 测试代码在最下边
 
 "【内部】编程语言⇒单行注释"
@@ -219,11 +221,10 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 
 "【内部】编程语言⇒常用扩展名（不带`.`）"
 const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
-# ! 以下「特殊注释」需要在行首
+    # ! 以下「特殊注释」需要在行首
 #= %inline-compiled =# include("./../src/language_extension_dict.data.jl")
-# !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
+    # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
-
 
 """
 【内部】根据编程语言猜测扩展名
@@ -241,12 +242,13 @@ get_extension(lang::Symbol) = get(
 # %ignore-cell
 let path_examples(path) = joinpath(ROOT_PATH, "examples", path),
     notebooks = [
-        #= C =# path_examples("c.ipynb")
-        #= Java =# path_examples("java.ipynb")
-        #= Julia =# SELF_PATH # * 直接使用自身
-        #= Python =# path_examples("python.ipynb")
-        #= TypeScript =# path_examples("typescript.ipynb")
-    ] .|> read_ipynb_json .|> IpynbNotebook
+                    path_examples("c.ipynb")          # C
+                    path_examples("java.ipynb")       # Java
+                    SELF_PATH                         # Julia # * 直接使用自身
+                    path_examples("python.ipynb")     # Python
+                    path_examples("typescript.ipynb") # TypeScript
+                ] .|> read_ipynb_json .|> IpynbNotebook
+
     @test all(identify_lang.(notebooks) .== [
         :c
         :java
@@ -254,10 +256,10 @@ let path_examples(path) = joinpath(ROOT_PATH, "examples", path),
         :python
         :typescript
     ])
-    
+
     langs = identify_lang.(notebooks)
     @info "识别到的所有语言" langs
-    
+
     table_comments = [langs generate_comment_inline.(langs) generate_comment_multiline_head.(langs) generate_comment_multiline_tail.(langs)]
     @info "生成的所有注释 [语言 单行 多行开头 多行结尾]" table_comments
 
@@ -290,13 +292,16 @@ $(generate_comment_inline(lang)) % nbformat_minor: $(notebook.nbformat_minor)
 # %ignore-below
 # ! ↑使用`# %ignore-below`让 编译器/解释器 忽略后续内容 | 【2024-01-26 21:38:54】debug：笔记本可能在不同的电脑上运行
 let notebook_jl_head = compile_notebook_head(notebook_raw_cell; lang=:julia)
-    @test contains(notebook_jl_head, r"""
-    # %% Jupyter Notebook \| [A-Za-z0-9. ]+ @ [A-Za-z0-9]+ \| format [0-9]+~[0-9]+
-    # % language_info: \{[^}]+\}
-    # % kernelspec: \{[^}]+\}
-    # % nbformat: [0-9]+
-    # % nbformat_minor: [0-9]+
-    """)
+    @test contains(
+        notebook_jl_head,
+        r"""
+# %% Jupyter Notebook \| [A-Za-z0-9. ]+ @ [A-Za-z0-9]+ \| format [0-9]+~[0-9]+
+# % language_info: \{[^}]+\}
+# % kernelspec: \{[^}]+\}
+# % nbformat: [0-9]+
+# % nbformat_minor: [0-9]+
+"""
+    )
     notebook_jl_head |> print
 end
 
@@ -316,10 +321,10 @@ struct IpynbCell
 
     "基于关键字参数的构造函数"
     IpynbCell(;
-       cell_type="code",
-       source=String[],
-       metadata=JSONDictAny(),
-       output=nothing
+        cell_type="code",
+        source=String[],
+        metadata=JSONDictAny(),
+        output=nothing
     ) = new(
         cell_type,
         source,
@@ -369,15 +374,16 @@ end
 macro cell_str(content::AbstractString, cell_type::String="code")
     return :(
         IpynbCell(;
-            cell_type=$cell_type,
-            source=$(split_to_cell(content))
-        )
+        cell_type=$cell_type,
+        source=$(split_to_cell(content))
+    )
     ) |> esc
 end
 
 # %ignore-below
 let a1 = split_to_cell("""1\n2\n3"""), # 📌测试【末尾有无换行】的区别
     a2 = split_to_cell("""1\n2\n3\n""")
+
     @test a1 == ["1\n", "2\n", "3"]
     @test a2 == ["1\n", "2\n", "3\n"]
 end
@@ -386,6 +392,7 @@ let cell = cell"""
     # 这是个标题
     第二行是内容
     """markdown # ! 末尾有个空行，最后一行会多出换行符↓
+
     @test cell.source == ["# 这是个标题\n", "第二行是内容\n"]
     @test cell.cell_type == "markdown"
     @show cell
@@ -412,7 +419,7 @@ export compile_cell
 """
 compile_cell(cell::IpynbCell; kwargs...)::String = compile_cell(
     # 使用`Val`类型进行分派
-    Val(Symbol(cell.cell_type)), 
+    Val(Symbol(cell.cell_type)),
     # 传递单元格对象自身
     cell;
     # 传递其它附加信息（如单元格序号，后续被称作「行号」）
@@ -425,16 +432,16 @@ compile_cell(cell::IpynbCell; kwargs...)::String = compile_cell(
 - ⚠️编译后不附带「最终换行符」
 """
 compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
-    compile_cell(
-        # 传递单元格对象
-        cell;
-        # 附加单元格序号
-        line_num,
-        # 传递其它附加信息（如单元格序号，后续被称作「行号」）
-        kwargs...
-    )
-    for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
-), '\n')
+        compile_cell(
+            # 传递单元格对象
+            cell;
+            # 附加单元格序号
+            line_num,
+            # 传递其它附加信息（如单元格序号，后续被称作「行号」）
+            kwargs...
+        )
+        for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
+    ), '\n')
 
 """
 【内部】对整个单元格的「类型标头」编译
@@ -556,7 +563,7 @@ function compile_code_lines(cell::IpynbCell;
             else # 若非`include(路径)`的形式⇒警告
                 @warn "非法表达式，内联失败！" current_line expr
             end
-        # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
+            # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
         elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-begin")
             # 只要后续没有以"$(generate_comment_inline(lang)) %ignore-end"开启的行，就不断跳过
             while !startswith(lines[current_line_i], "$(generate_comment_inline(lang)) %ignore-end") && current_line_i <= len_lines
@@ -566,13 +573,13 @@ function compile_code_lines(cell::IpynbCell;
         elseif (
             startswith(current_line, "$(generate_comment_multiline_head(lang)) %only-compiled") ||
             startswith(current_line, "%only-compiled $(generate_comment_multiline_tail(lang))")
-            )
+        )
             # ! 不做任何事情，跳过当前行
-        # * 否则：直接将行追加到结果
+            # * 否则：直接将行追加到结果
         else
             result *= current_line
         end
-        
+
         # 最终递增
         current_line_i += 1
     end
@@ -592,8 +599,8 @@ let 引入路径 = joinpath(ROOT_PATH, "test", "%include.test.jl")
     ispath(引入路径) || write(引入路径, 预期引入内容)
     # 现场编译
     引入后内容 = compile_code_lines(
-        IpynbCell(; 
-            cell_type="code", 
+        IpynbCell(;
+            cell_type="code",
             source=["# %include $引入路径"]
         );
         lang=:julia
@@ -641,11 +648,14 @@ end
 
 # %ignore-below
 let cell = cells[1]
-    local compiled::String = @show compile_cell(cell; lang=:julia, line_num = 1)
-    @test contains(compiled, r"""
-    # %% \[1\] markdown
-    # # IpynbCompile\.jl: [^\n]+
-    """)
+    local compiled::String = @show compile_cell(cell; lang=:julia, line_num=1)
+    @test contains(
+        compiled,
+        r"""
+# %% \[1\] markdown
+# # IpynbCompile\.jl: [^\n]+
+"""
+    )
     compiled |> println
 end
 
@@ -654,7 +664,7 @@ let cell = cell"""
     <!-- %ignore-cell 可以使用Markdown风格的注释 -->
     后边的内容，仍然被忽略
     """markdown
-    local compiled::String = compile_cell(cell; lang=:julia, line_num = 1)
+    local compiled::String = compile_cell(cell; lang=:julia, line_num=1)
     @test isempty(compiled) # 编译后为空
     compiled |> println
 end
@@ -665,7 +675,7 @@ let cell = cell"""
     后边的内容，
     全部被忽略！
     """markdown
-    local compiled::String = compile_cell(cell; lang=:julia, line_num = 1)
+    local compiled::String = compile_cell(cell; lang=:julia, line_num=1)
     @test compiled == """\
     # %% [1] markdown
     # 这些内容不会被忽略
@@ -689,7 +699,7 @@ export parse_cell, tryparse_cell, eval_cell
 @param kwargs 附加参数
 @return 解析后的Julia表达式 | nothing（不可执行）
 """
-function parse_cell(cell::IpynbCell; parse_function = Meta.parseall, kwargs...)
+function parse_cell(cell::IpynbCell; parse_function=Meta.parseall, kwargs...)
 
     # 只有类型为 code 才执行解析
     cell.cell_type == "code" && return parse_function(
@@ -707,7 +717,7 @@ end
 @param kwargs 附加参数
 @return 解析后的Julia表达式（可能含有错误的表达式`:error`）
 """
-function parse_cell(cells::Vector{IpynbCell}; parse_function = Meta.parseall, kwargs...)
+function parse_cell(cells::Vector{IpynbCell}; parse_function=Meta.parseall, kwargs...)
     return parse_function(
         # 预先编译所有代码单元格，然后连接成一个字符串
         join(
@@ -726,13 +736,14 @@ end
         - 📝解析错误的代码会被`Meta.parseall`包裹进类似`Expr(错误)`的表达式中
         - 例如：`Expr(:incomplete, "incomplete: premature end of input")`
 """
-tryparse_cell(args...; kwargs...) = try
-    parse_cell(args...; kwargs...)
-catch e
-    @warn e
-    showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
-    nothing
-end
+tryparse_cell(args...; kwargs...) =
+    try
+        parse_cell(args...; kwargs...)
+    catch e
+        @warn e
+        showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
+        nothing
+    end
 
 """
 执行单元格
@@ -774,9 +785,9 @@ export compile_notebook
 - @return 编译后的文本
 """
 compile_notebook(
-    notebook::IpynbNotebook; 
+    notebook::IpynbNotebook;
     # 自动识别语言
-    lang=identify_lang(notebook), 
+    lang=identify_lang(notebook),
     kwargs...
 ) = """\
 $(compile_notebook_head(notebook; lang, kwargs...))
@@ -802,7 +813,7 @@ end
 """
 compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) = write(
     # 使用 `write`函数，自动写入编译结果
-    path, 
+    path,
     # 传入前编译
     compile_notebook(notebook; kwargs...)
 )
@@ -814,7 +825,7 @@ compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) = wri
 """
 compile_notebook(path::AbstractString, destination; kwargs...) = compile_notebook(
     # 直接使用构造函数加载笔记本
-    IpynbNotebook(path), 
+    IpynbNotebook(path),
     # 保存在目标路径
     destination;
     # 其它附加参数 #
@@ -855,7 +866,7 @@ export parse_notebook, tryparse_notebook
 @param kwargs 附加参数
 @return 解析后的Julia表达式（可能含有错误的表达式`:error`）
 """
-function parse_notebook(notebook::IpynbNotebook; parse_function = Meta.parseall, kwargs...)
+function parse_notebook(notebook::IpynbNotebook; parse_function=Meta.parseall, kwargs...)
     return parse_function(
         # 预先编译整个笔记本
         compile_notebook(notebook; kwargs)
@@ -869,13 +880,14 @@ end
         - 📝解析错误的代码会被`Meta.parseall`包裹进类似`Expr(错误)`的表达式中
         - 例如：`Expr(:incomplete, "incomplete: premature end of input")`
 """
-tryparse_notebook(args...; kwargs...) = try
-    parse_notebook(args...; kwargs...)
-catch e
-    @warn e
-    showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
-    nothing
-end
+tryparse_notebook(args...; kwargs...) =
+    try
+        parse_notebook(args...; kwargs...)
+    catch e
+        @warn e
+        showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
+        nothing
+    end
 
 # %ignore-below
 @test tryparse_notebook(notebook) isa Expr
@@ -890,8 +902,10 @@ export eval_notebook, eval_notebook_by_cell
     - 可以实现一些「编译后可用」的「上下文相关代码」
         - 如「将全笔记本代码打包成一个模块」
 """
-eval_notebook(notebook::IpynbNotebook; eval_function=Main.eval) = eval_function(
-    parse_notebook(notebook)
+eval_notebook(notebook::IpynbNotebook; eval_function=Main.eval) = (
+    notebook
+    |> parse_notebook
+    |> eval_function
 )
 
 """
@@ -924,8 +938,8 @@ export include_notebook, include_notebook_by_cell
 - 会像`include`一样返回「最后一个执行的单元格的返回值」
 """
 include_notebook(path::AbstractString; kwargs...) = eval_notebook(
-    path |> 
-    read_ipynb_json |> 
+    path |>
+    read_ipynb_json |>
     IpynbNotebook{IpynbCell};
     # 其它附加参数（如「编译根目录」）
     kwargs...
@@ -940,8 +954,8 @@ include_notebook(path::AbstractString; kwargs...) = eval_notebook(
     - 但正如`include`一样，「最后一个执行的单元格的返回值」仍然会被返回
 """
 include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cell(
-    path |> 
-    read_ipynb_json |> 
+    path |>
+    read_ipynb_json |>
     IpynbNotebook{IpynbCell};
     # 其它附加参数（如「编译根目录」）
     kwargs...
@@ -975,7 +989,7 @@ end # module
 let OUT_LIB_FILE = "IpynbCompile.jl" # 直接作为库的主文件
     # !不能在`runtests.jl`中运行
     contains(@__DIR__, "test") && return
-    
+
     # * 测试Pair编译
     write_bytes = compile_notebook(SELF_PATH => joinpath(ROOT_PATH, "src", OUT_LIB_FILE))
     printstyled(
@@ -1025,22 +1039,22 @@ if !contains(@__DIR__, "test") # 不能在测试代码中被重复调用
     OUT_TEST_JL = joinpath(ROOT_PATH, "test", "runtests.jl") # 直接作为库的主文件
     # 直接拼接所有代码单元格
     code_tests = join((
-        join(cell.source)
-        for cell in notebook.cells
-        if cell.cell_type == "code"
-    ), "\n\n")
+            join(cell.source)
+            for cell in notebook.cells
+            if cell.cell_type == "code"
+        ), "\n\n")
     # 开头使用Test库，并添加测试上下文
     code_tests = """\
     # 【附加】使用测试代码
     using Test
-    
+
     """ * code_tests
     # @testset "main" begin # !【2024-01-27 01:23:08】停用，会导致无法使用其内的宏`cell_str`
     # 替换所有的`@test`为`@test`
     code_tests = replace(code_tests, "@test" => "@test")
     # 注释掉所有的`write`写入代码（单行）
     code_tests = replace(
-        code_tests, 
+        code_tests,
         # * 📝Julia中的「捕获-映射」替换：传入一个函数✅
         r"\n *write\(([^\n]+)\)(?:\n|$)" => "\n#= 文件读写已忽略 =#\n"
     )
@@ -1076,25 +1090,25 @@ README_markdowns = markdowns[begin:README_END_INDEX-1]
 
 # * 提取Markdown代码，聚合生成原始文档
 README_markdown_TEXT = join((
-    join(cell.source) * '\n' # ←这里需要加上换行
-    for cell in README_markdowns
-    # * 根据【空单元格】或【任一行注释】进行忽略
-    if !(isempty(cell.source) || any(
-        startswith(line, FLAG_IGNORE)
-        for line in cell.source
-    ))
-), '\n')
+        join(cell.source) * '\n' # ←这里需要加上换行
+        for cell in README_markdowns
+        # * 根据【空单元格】或【任一行注释】进行忽略
+        if !(isempty(cell.source) || any(
+            startswith(line, FLAG_IGNORE)
+            for line in cell.source
+        ))
+    ), '\n')
 
 # * 继续处理：缩进4→2，附加注释
 README_markdown_TEXT = join((
-    begin
-        local space_stripped_line = lstrip(line, ' ')
-        local head_space_length = length(line) - length(space_stripped_line)
-        # 缩进缩减到原先的一半
-        ' '^(head_space_length ÷ 2) * space_stripped_line
-    end
-    for line in split(README_markdown_TEXT, '\n')
-), '\n')
+        begin
+            local space_stripped_line = lstrip(line, ' ')
+            local head_space_length = length(line) - length(space_stripped_line)
+            # 缩进缩减到原先的一半
+            ' '^(head_space_length ÷ 2) * space_stripped_line
+        end
+        for line in split(README_markdown_TEXT, '\n')
+    ), '\n')
 using Dates: now # * 增加日期注释（不会在正文显示）
 README_markdown_TEXT = """\
 <!-- ⚠️该文件由 `$SELF_FILE` 自动生成于 $(now())，无需手动修改 -->

@@ -315,9 +315,10 @@ export read_ipynb_json
 - @param path .ipynb文件路径
 - @return .ipynb文件内容（JSON文本→Julia对象）
 """
-read_ipynb_json(path) = open(path, "r") do f
-    read(f, String) |> JSON.parse
-end
+read_ipynb_json(path) =
+    open(path, "r") do f
+        read(f, String) |> JSON.parse
+    end
 
 # ! ↓使用`# %ignore-line`让 编译器/解释器 忽略下一行
 
@@ -519,8 +520,8 @@ end
 const LANG_IDENTIFY_DICT::Dict{Symbol,Regex} = Dict{Symbol,Regex}(
     lang => Regex("^(?:$regex_str)\$") # ! ←必须头尾精确匹配（不然就会把`JavaScript`认成`r`）
     for (lang::Symbol, regex_str::String) in
-# ! 以下「特殊注释」需要在行首
-# * 下方内容是「执行时动态引入，编译时静态内联」
+    # ! 以下「特殊注释」需要在行首
+    # * 下方内容是「执行时动态引入，编译时静态内联」
 # ! be included in: IpynbCompile.jl @ module IpynbCompile
 # 其值看似作为正则表达式，实则后续需要变为「头尾精确匹配」
 #= 实际上这里只需一个Julia数组 =# [
@@ -578,9 +579,8 @@ const LANG_IDENTIFY_DICT::Dict{Symbol,Regex} = Dict{Symbol,Regex}(
     :vbscript           => "VBScript|vbscript"
     :zig                => "Zig|zig"
 ]
-# !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
+    # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
-
 
 """
 【内部】识别笔记本的编程语言
@@ -603,9 +603,10 @@ identify_lang(notebook::IpynbNotebook) = identify_lang(
         )
     )
 )
-identify_lang(language_text::AbstractString) = findfirst(LANG_IDENTIFY_DICT) do regex
-    contains(language_text, regex)
-end # ! 默认返回`nothing`
+identify_lang(language_text::AbstractString) =
+    findfirst(LANG_IDENTIFY_DICT) do regex
+        contains(language_text, regex)
+    end # ! 默认返回`nothing`
 
 
 # %% [58] markdown
@@ -710,7 +711,7 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 # %% [61] code
 "【内部】编程语言⇒常用扩展名（不带`.`）"
 const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
-# ! 以下「特殊注释」需要在行首
+    # ! 以下「特殊注释」需要在行首
 # ! be included in: IpynbCompile.jl @ module IpynbCompile
 # * 记录【未指定路径时】从语言到扩展名的映射 | 一般是常见扩展名 | 不带「.」 | 注释为【不确定】项
 #= 实际上这里只需一个Julia数组 =# [
@@ -768,9 +769,8 @@ const LANG_EXTENSION_DICT::Dict{Symbol,String} = Dict{Symbol,String}(
     # :vbscript           => "vbscript"
     # :zig                => "zig"
 ]
-# !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
+    # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
-
 
 """
 【内部】根据编程语言猜测扩展名
@@ -844,10 +844,10 @@ struct IpynbCell
 
     "基于关键字参数的构造函数"
     IpynbCell(;
-       cell_type="code",
-       source=String[],
-       metadata=JSONDictAny(),
-       output=nothing
+        cell_type="code",
+        source=String[],
+        metadata=JSONDictAny(),
+        output=nothing
     ) = new(
         cell_type,
         source,
@@ -899,9 +899,9 @@ end
 macro cell_str(content::AbstractString, cell_type::String="code")
     return :(
         IpynbCell(;
-            cell_type=$cell_type,
-            source=$(split_to_cell(content))
-        )
+        cell_type=$cell_type,
+        source=$(split_to_cell(content))
+    )
     ) |> esc
 end
 
@@ -934,7 +934,7 @@ export compile_cell
 """
 compile_cell(cell::IpynbCell; kwargs...)::String = compile_cell(
     # 使用`Val`类型进行分派
-    Val(Symbol(cell.cell_type)), 
+    Val(Symbol(cell.cell_type)),
     # 传递单元格对象自身
     cell;
     # 传递其它附加信息（如单元格序号，后续被称作「行号」）
@@ -947,16 +947,16 @@ compile_cell(cell::IpynbCell; kwargs...)::String = compile_cell(
 - ⚠️编译后不附带「最终换行符」
 """
 compile_cell(cells::Vector{IpynbCell}; kwargs...)::String = join((
-    compile_cell(
-        # 传递单元格对象
-        cell;
-        # 附加单元格序号
-        line_num,
-        # 传递其它附加信息（如单元格序号，后续被称作「行号」）
-        kwargs...
-    )
-    for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
-), '\n')
+        compile_cell(
+            # 传递单元格对象
+            cell;
+            # 附加单元格序号
+            line_num,
+            # 传递其它附加信息（如单元格序号，后续被称作「行号」）
+            kwargs...
+        )
+        for (line_num, cell) in enumerate(cells) # ! ←一定是顺序遍历
+    ), '\n')
 
 # %% [77] markdown
 # ### 编译/单元格标头
@@ -1083,7 +1083,7 @@ function compile_code_lines(cell::IpynbCell;
             else # 若非`include(路径)`的形式⇒警告
                 @warn "非法表达式，内联失败！" current_line expr
             end
-        # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
+            # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
         elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-begin")
             # 只要后续没有以"$(generate_comment_inline(lang)) %ignore-end"开启的行，就不断跳过
             while !startswith(lines[current_line_i], "$(generate_comment_inline(lang)) %ignore-end") && current_line_i <= len_lines
@@ -1093,13 +1093,13 @@ function compile_code_lines(cell::IpynbCell;
         elseif (
             startswith(current_line, "$(generate_comment_multiline_head(lang)) %only-compiled") ||
             startswith(current_line, "%only-compiled $(generate_comment_multiline_tail(lang))")
-            )
+        )
             # ! 不做任何事情，跳过当前行
-        # * 否则：直接将行追加到结果
+            # * 否则：直接将行追加到结果
         else
             result *= current_line
         end
-        
+
         # 最终递增
         current_line_i += 1
     end
@@ -1177,7 +1177,7 @@ export parse_cell, tryparse_cell, eval_cell
 @param kwargs 附加参数
 @return 解析后的Julia表达式 | nothing（不可执行）
 """
-function parse_cell(cell::IpynbCell; parse_function = Meta.parseall, kwargs...)
+function parse_cell(cell::IpynbCell; parse_function=Meta.parseall, kwargs...)
 
     # 只有类型为 code 才执行解析
     cell.cell_type == "code" && return parse_function(
@@ -1195,7 +1195,7 @@ end
 @param kwargs 附加参数
 @return 解析后的Julia表达式（可能含有错误的表达式`:error`）
 """
-function parse_cell(cells::Vector{IpynbCell}; parse_function = Meta.parseall, kwargs...)
+function parse_cell(cells::Vector{IpynbCell}; parse_function=Meta.parseall, kwargs...)
     return parse_function(
         # 预先编译所有代码单元格，然后连接成一个字符串
         join(
@@ -1214,13 +1214,14 @@ end
         - 📝解析错误的代码会被`Meta.parseall`包裹进类似`Expr(错误)`的表达式中
         - 例如：`Expr(:incomplete, "incomplete: premature end of input")`
 """
-tryparse_cell(args...; kwargs...) = try
-    parse_cell(args...; kwargs...)
-catch e
-    @warn e
-    showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
-    nothing
-end
+tryparse_cell(args...; kwargs...) =
+    try
+        parse_cell(args...; kwargs...)
+    catch e
+        @warn e
+        showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
+        nothing
+    end
 
 """
 执行单元格
@@ -1256,9 +1257,9 @@ export compile_notebook
 - @return 编译后的文本
 """
 compile_notebook(
-    notebook::IpynbNotebook; 
+    notebook::IpynbNotebook;
     # 自动识别语言
-    lang=identify_lang(notebook), 
+    lang=identify_lang(notebook),
     kwargs...
 ) = """\
 $(compile_notebook_head(notebook; lang, kwargs...))
@@ -1284,7 +1285,7 @@ end
 """
 compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) = write(
     # 使用 `write`函数，自动写入编译结果
-    path, 
+    path,
     # 传入前编译
     compile_notebook(notebook; kwargs...)
 )
@@ -1296,7 +1297,7 @@ compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) = wri
 """
 compile_notebook(path::AbstractString, destination; kwargs...) = compile_notebook(
     # 直接使用构造函数加载笔记本
-    IpynbNotebook(path), 
+    IpynbNotebook(path),
     # 保存在目标路径
     destination;
     # 其它附加参数 #
@@ -1338,7 +1339,7 @@ export parse_notebook, tryparse_notebook
 @param kwargs 附加参数
 @return 解析后的Julia表达式（可能含有错误的表达式`:error`）
 """
-function parse_notebook(notebook::IpynbNotebook; parse_function = Meta.parseall, kwargs...)
+function parse_notebook(notebook::IpynbNotebook; parse_function=Meta.parseall, kwargs...)
     return parse_function(
         # 预先编译整个笔记本
         compile_notebook(notebook; kwargs)
@@ -1352,13 +1353,14 @@ end
         - 📝解析错误的代码会被`Meta.parseall`包裹进类似`Expr(错误)`的表达式中
         - 例如：`Expr(:incomplete, "incomplete: premature end of input")`
 """
-tryparse_notebook(args...; kwargs...) = try
-    parse_notebook(args...; kwargs...)
-catch e
-    @warn e
-    showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
-    nothing
-end
+tryparse_notebook(args...; kwargs...) =
+    try
+        parse_notebook(args...; kwargs...)
+    catch e
+        @warn e
+        showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
+        nothing
+    end
 
 
 
@@ -1377,8 +1379,10 @@ export eval_notebook, eval_notebook_by_cell
     - 可以实现一些「编译后可用」的「上下文相关代码」
         - 如「将全笔记本代码打包成一个模块」
 """
-eval_notebook(notebook::IpynbNotebook; eval_function=Main.eval) = eval_function(
-    parse_notebook(notebook)
+eval_notebook(notebook::IpynbNotebook; eval_function=Main.eval) = (
+    notebook
+    |> parse_notebook
+    |> eval_function
 )
 
 """
@@ -1413,8 +1417,8 @@ export include_notebook, include_notebook_by_cell
 - 会像`include`一样返回「最后一个执行的单元格的返回值」
 """
 include_notebook(path::AbstractString; kwargs...) = eval_notebook(
-    path |> 
-    read_ipynb_json |> 
+    path |>
+    read_ipynb_json |>
     IpynbNotebook{IpynbCell};
     # 其它附加参数（如「编译根目录」）
     kwargs...
@@ -1429,8 +1433,8 @@ include_notebook(path::AbstractString; kwargs...) = eval_notebook(
     - 但正如`include`一样，「最后一个执行的单元格的返回值」仍然会被返回
 """
 include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cell(
-    path |> 
-    read_ipynb_json |> 
+    path |>
+    read_ipynb_json |>
     IpynbNotebook{IpynbCell};
     # 其它附加参数（如「编译根目录」）
     kwargs...
