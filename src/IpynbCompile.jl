@@ -1,6 +1,6 @@
-# %% Jupyter Notebook | Julia 1.10.0 @ julia | format 2~4
-# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.10.0"}
-# % kernelspec: {"name":"julia-1.10","display_name":"Julia 1.10.0","language":"julia"}
+# %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
+# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.9.1"}
+# % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
 
@@ -697,7 +697,7 @@ for (lang::Symbol, (i::String, (m_head::String, m_tail::String))) in (
     # :r                  => [] # ! 无多行注释
     # :racket             => []
     # :ruby               => []
-    # :rust               => []
+    :rust               => ["//", ("/*", "*/")]
     # :sass               => []
     # :scala              => []
     # :scheme             => []
@@ -782,7 +782,7 @@ const LANG_EXTENSION_DICT = Dict{Symbol,String}(
     :r                  => "r"
     # :racket             => "racket"
     # :ruby               => "ruby"
-    # :rust               => "rust"
+    :rust               => "rs"
     # :sass               => "sass"
     # :scala              => "scala"
     # :scheme             => "scheme"

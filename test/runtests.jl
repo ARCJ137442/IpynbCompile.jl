@@ -248,6 +248,7 @@ let path_examples(path) = joinpath(ROOT_PATH, "examples", path),
                     path_examples("java.ipynb")       # Java
                     SELF_PATH                         # Julia # * 直接使用自身
                     path_examples("python.ipynb")     # Python
+                    path_examples("rust.ipynb")       # Rust
                     path_examples("typescript.ipynb") # TypeScript
                 ] .|> read_ipynb_json .|> IpynbNotebook
 
@@ -256,6 +257,7 @@ let path_examples(path) = joinpath(ROOT_PATH, "examples", path),
         :java
         :julia
         :python
+        :rust
         :typescript
     ])
 

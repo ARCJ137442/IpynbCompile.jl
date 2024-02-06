@@ -41,7 +41,7 @@
     :r                  => "r"
     # :racket             => "racket"
     # :ruby               => "ruby"
-    # :rust               => "rust"
+    :rust               => "rs"
     # :sass               => "sass"
     # :scala              => "scala"
     # :scheme             => "scheme"
