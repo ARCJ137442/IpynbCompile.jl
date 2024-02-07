@@ -632,6 +632,8 @@ let 引入路径 = joinpath(ROOT_PATH, "test", "%include.test.jl")
     )
     @test rstrip(引入后内容) == 预期引入内容 # rstrip(引入后内容) # !【2024-01-27 00:50:55】为后期兼容`runtests.jl`，不能引入第二个参数
     println(引入后内容)
+    # 清理现场
+    rm(引入路径)
 end
 
 printstyled("↓现在预览下其中所有代码的部分\n"; bold=true, color=:light_green)
@@ -1000,17 +1002,17 @@ let 引入路径 = joinpath(ROOT_PATH, "test", "%inline-compiled.test.ipynb")
                 "cell_type": "code",
                 "metadata": {},
                 "source": [
-                    "# %ignore-cell",
-                    "print(\"这单元格不会引入\")"
+                    "# %ignore-cell\\n",
+                    "print(\\"这单元格不会引入\\")"
                 ]
             },
             {
                 "cell_type": "code",
                 "metadata": {},
                 "source": [
-                    "# %ignore-line",
-                    "println(\"这行不会被引入\")",
-                    "println(\"这行会被引入\")"
+                    "# %ignore-line\\n",
+                    "println(\\"这行不会被引入\\")\\n",
+                    "println(\\"这行会被引入\\")"
                 ]
             }
         ],
@@ -1040,6 +1042,8 @@ let 引入路径 = joinpath(ROOT_PATH, "test", "%inline-compiled.test.ipynb")
     @test !contains(引入后内容, "println(\"这行不会被引入\")")
     @test !contains(引入后内容, "println(\"这单元格不会被引入\")")
     println(引入后内容)
+    # 清理现场
+    rm(引入路径)
 end
 
 # %ignore-cell
