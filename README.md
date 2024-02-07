@@ -1,4 +1,4 @@
-<!-- ⚠️该文件由 `IpynbCompile.ipynb` 自动生成于 2024-02-07T17:46:28.957，无需手动修改 -->
+<!-- ⚠️该文件由 `IpynbCompile.ipynb` 自动生成于 2024-02-07T19:07:22.340，无需手动修改 -->
 # IpynbCompile.jl: 一个实用的Jupyter笔记本构建工具
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
@@ -183,7 +183,7 @@
 
 ##### 文件引入
 
-主要用途：结合「仅编译后可用」实现「外部代码内联」
+主要用途：结合「仅编译后可用」简单实现「外部代码内联」
 
 - 如：集成某些**中小型映射表**，整合零散源码文件……
 
@@ -191,8 +191,52 @@
 
 ```julia
 const square_map_dict = # 这里的等号可以另起一行
-# % include to_include.jl 
+# %include to_include.jl 
+# ↑ 上面一行会被替换成文件内容
+```
+
+编译前@和笔记本**同目录**下的`to_include.jl`中：
+↓文件末尾有换行符
+
+```julia
+# 这是一个要被引入的外部字典对象
+Dict([
+  1 => 1
+  2 => 4
+  3 => 9
+  # ...
+])
+```
+
+编译后：
+
+```julia
+const square_map_dict = # 这里的等号可以另起一行
+# 这是一个要被引入的外部字典对象
+Dict([
+  1 => 1
+  2 => 4
+  3 => 9
+  # ...
+])
 # ↑ 上面一行会被替换成数据
+```
+
+📝Julia的「空白符无关性」允许在等号后边大范围附带注释的空白
+
+##### 文件内联
+
+主要用途：为「文件引入」提供一个快捷方式，并**支持「编译后内联笔记本」**
+
+- 如：编译并集成**其它笔记本**到该文件中
+
+编译前@笔记本单元格：
+
+```julia
+const square_map_dict = # 这里的等号可以另起一行
+#= %inline-compiled =# include("to_include.jl")
+# ↑ 上面一行会被替换成文件内容
+# * 若为使用`include_notebook`引入的笔记本，则会被替换为编译后的笔记本内容
 ```
 
 编译前@和笔记本**同目录**下的`to_include.jl`中：

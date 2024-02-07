@@ -35,8 +35,8 @@ read_ipynb_json(path) =
     open(path, "r") do f
         read(f, String) |> JSON.parse
     end
-
-# ! ↓使用`# %ignore-line`让 编译器/解释器 忽略下一行
+# %ignore-line
+# ! ↕使用`# %ignore-line`让 编译器/解释器 忽略下一行
 # %ignore-line
 ROOT_PATH = any(contains(@__DIR__(), sub) for sub in ["src", "test"]) ? dirname(@__DIR__) : @__DIR__
 # %ignore-line
@@ -124,9 +124,9 @@ IpynbNotebookMetadata(json::JSONDict) = IpynbNotebookMetadata(;
     language_info=json["language_info"],
     kernelspec=json["kernelspec"],
 )
-
-# ! ↓使用`# %ignore-below`让 编译器/解释器 忽略后续内容
 # %ignore-below
+# ! ↑使用`# %ignore-below`让 编译器/解释器 忽略后续内容
+
 notebook_raw_cell = IpynbNotebook(notebook_json)
 notebook_metadata = notebook_raw_cell.metadata
 @info "JSON转译结构化成功！" notebook_raw_cell notebook_metadata
@@ -146,6 +146,7 @@ macro notebook_str(path::AbstractString)
     :(read_notebook($path)) |> esc
 end
 # %ignore-below
+
 @macroexpand notebook"IpynbCompile.ipynb"
 
 "【内部】编程语言⇒正则表达式 识别字典"
@@ -183,7 +184,6 @@ identify_lang(language_text::AbstractString) =
     findfirst(LANG_IDENTIFY_DICT) do regex
         contains(language_text, regex)
     end # ! 默认返回`nothing`
-# %ignore-below # ! 测试代码在最下边
 
 "【内部】编程语言⇒单行注释"
 const LANG_COMMENT_DICT_INLINE = Dict{Symbol,String}()
@@ -217,8 +217,8 @@ generate_comment_multiline_head(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_HEAD
 
 "【内部】生成块注释结尾 | ⚠️找不到⇒报错"
 generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL[lang]
-
 # %ignore-below # ! 测试代码在最下边
+
 @info "" LANG_COMMENT_DICT_INLINE LANG_COMMENT_DICT_MULTILINE_HEAD LANG_COMMENT_DICT_MULTILINE_TAIL
 
 "【内部】编程语言⇒常用扩展名（不带`.`）"
@@ -237,8 +237,8 @@ get_extension(lang::Symbol) = get(
     LANG_EXTENSION_DICT, lang,
     string(lang)
 )
-
 # %ignore-below # ! 测试代码在最下边
+
 @info "" LANG_EXTENSION_DICT
 
 # %ignore-cell
@@ -292,8 +292,8 @@ $(generate_comment_inline(lang)) % kernelspec: $(JSON.json(notebook.metadata.ker
 $(generate_comment_inline(lang)) % nbformat: $(notebook.nbformat)
 $(generate_comment_inline(lang)) % nbformat_minor: $(notebook.nbformat_minor)
 """
-
 # %ignore-below
+
 # ! ↑使用`# %ignore-below`让 编译器/解释器 忽略后续内容 | 【2024-01-26 21:38:54】debug：笔记本可能在不同的电脑上运行
 let notebook_jl_head = compile_notebook_head(notebook_raw_cell; lang=:julia)
     @test contains(
@@ -383,8 +383,8 @@ macro cell_str(content::AbstractString, cell_type::String="code")
     )
     ) |> esc
 end
-
 # %ignore-below
+
 let a1 = split_to_cell("""1\n2\n3"""), # 📌测试【末尾有无换行】的区别
     a2 = split_to_cell("""1\n2\n3\n""")
 
@@ -406,8 +406,8 @@ end
 # ! 在此重定向，以便后续外部调用
 "重定向「笔记本」的默认「单元格」类型"
 IpynbNotebook(json) = IpynbNotebook{IpynbCell}(json)
-
 # %ignore-below
+
 notebook = IpynbNotebook{IpynbCell}(notebook_json)
 cells = notebook.cells
 
@@ -466,8 +466,8 @@ $(generate_comment_inline(lang)) %% \
 $(#= 可选的行号 =# haskey(kwargs, :line_num) ? "[$(kwargs[:line_num])] " : "")\
 $(cell.cell_type)
 """ # ! ←末尾附带换行符
-
 # %ignore-below
+
 @test compile_cell_head(notebook.cells[1]; lang=:julia) == "# %% markdown\n"
 @test compile_cell_head(notebook.cells[1]; lang=:julia, line_num=1) == "# %% [1] markdown\n"
 
@@ -533,12 +533,22 @@ function compile_code_lines(cell::IpynbCell;
         # * `%ignore-line` 忽略下一行 | 仅需为行前缀
         if startswith(current_line, "$(generate_comment_inline(lang)) %ignore-line")
             current_line_i += 1 # ! 结合后续递增，跳过下面一行，不让本「特殊注释」行被编译
+
         # * `%ignore-below` 忽略下面所有行 | 仅需为行前缀
         elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-below")
             break # ! 结束循环，不再编译后续代码
+
         # * `%ignore-cell` 忽略整个单元格 | 仅需为行前缀
         elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-cell")
             return nothing # ! 返回「不编译单元格」的信号
+
+        # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
+        elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-begin")
+            # 只要后续没有以"$(generate_comment_inline(lang)) %ignore-end"开启的行，就不断跳过
+            while !startswith(lines[current_line_i], "$(generate_comment_inline(lang)) %ignore-end") && current_line_i <= len_lines
+                current_line_i += 1 # 忽略性递增
+            end # ! 让最终递增跳过"# %ignore-end"所在行
+
         # * `%include` 读取其所指定的路径，并将其内容作为「当前行」添加（不会自动添加换行！） | 仅需为行前缀
         elseif startswith(current_line, "$(generate_comment_inline(lang)) %include")
             # 在指定的「根路径」参数下行事 # * 无需使用`@inline`，编译器会自动内联
@@ -546,33 +556,43 @@ function compile_code_lines(cell::IpynbCell;
             # 读取内容
             local content::String = read(joinpath(root_path, relative_path), String)
             result *= content # ! 不会自动添加换行！
-        # * `#= %inline-compiled =# include(` 读取后边`include`指定的路径，并将其内容作为「当前行」添加（不会自动添加换行！） | 仅需为行前缀
-        elseif startswith(current_line, "$(generate_comment_multiline_head(lang)) %inline-compiled $(generate_comment_multiline_tail(lang)) include(")
+
+        # * `#= %inline-compiled =# <include>(` 读取`<include>`后边指定的路径，解析其并内容作为「当前行」内联添加（不会自动添加换行！） | 仅需为行前缀
+        elseif startswith(current_line, "$(generate_comment_multiline_head(lang)) %inline-compiled $(generate_comment_multiline_tail(lang))")
             # 直接作为Julia代码解析
             local expr::Expr = Meta.parse(current_line)
             #= # * 在Expr中提取相应字符串 | 参考:
+            ```
             julia> :(include("123")) |> dump
             Expr
             head: Symbol call
             args: Array{Any}((2,))
                 1: Symbol include
                 2: String "123"
+            ```
+            * JuLISP语法：(call include "123")
             =#
-            if expr.head == :call && expr.args[1] == :include && length(expr.args) > 1
+            if expr.head == :call && length(expr.args) > 1
                 # 在指定的「根路径」参数下行事 # * 无需使用`@inline`，编译器会自动内联
-                relative_path = expr.args[2]
-                # 读取内容 | if内不再要用local，和上级表达式重复
-                content = read(joinpath(root_path, relative_path), String)
+                relative_path = Main.eval(expr.args[2]) # * 在主模块上下文中加载计算路径
+                local file_path::String = joinpath(root_path, relative_path)
+                # * include⇒读取文件内容
+                if expr.args[1] == :include
+                    content = read(file_path, String)
+                # * include_notebook⇒读取编译笔记本
+                elseif expr.args[1] == :include_notebook
+                    content = compile_notebook(
+                        IpynbNotebook(file_path); # 需要构造函数 # ! 直接使用字符串会将其编译为源码文件
+                        root_path=dirname(file_path), # ! 使用文件自身的根目录
+                        kwargs..., # 其它附加参数
+                    )
+                end
+                # 追加内容
                 result *= content # ! 不会自动添加换行！
             else # 若非`include(路径)`的形式⇒警告
                 @warn "非法表达式，内联失败！" current_line expr
             end
-            # * `%ignore-begin` 跳转到`%ignore-end`的下一行，并忽略中间所有行 | 仅需为行前缀
-        elseif startswith(current_line, "$(generate_comment_inline(lang)) %ignore-begin")
-            # 只要后续没有以"$(generate_comment_inline(lang)) %ignore-end"开启的行，就不断跳过
-            while !startswith(lines[current_line_i], "$(generate_comment_inline(lang)) %ignore-end") && current_line_i <= len_lines
-                current_line_i += 1 # 忽略性递增
-            end # ! 让最终递增跳过"# %ignore-end"所在行
+
         # * `%only-compiled` 仅编译后可用（多行） | 仅需为行前缀
         elseif (
             startswith(current_line, "$(generate_comment_multiline_head(lang)) %only-compiled") ||
@@ -580,6 +600,7 @@ function compile_code_lines(cell::IpynbCell;
         )
             # ! 不做任何事情，跳过当前行
             # * 否则：直接将行追加到结果
+
         else
             result *= current_line
         end
@@ -591,9 +612,9 @@ function compile_code_lines(cell::IpynbCell;
     # 最后返回所有行 # ! 「在最后一行和先前所有行的换行符一致」在行编译后方运行
     return result
 end
-
 # %ignore-below
 
+# 测试`%include`
 let 引入路径 = joinpath(ROOT_PATH, "test", "%include.test.jl")
     # 放置测试脚本
     预期引入内容 = """\
@@ -761,7 +782,6 @@ tryparse_cell(args...; kwargs...) =
 eval_cell(code_or_codes; eval_function=Main.eval, kwargs...) = eval_function(
     parse_cell(code_or_codes; kwargs...)
 )
-
 # %ignore-below
 
 # 执行其中一个代码单元格 # * 参考「预置语法糖」
@@ -860,8 +880,8 @@ function compile_notebook(path::AbstractString; kwargs...)
         root_path=dirname(path),
     )
 end
-
 # %ignore-below
+
 compile_notebook(notebook) |> print
 
 #= %only-compiled # ! 模块上下文：导出元素
@@ -897,8 +917,8 @@ tryparse_notebook(args...; kwargs...) =
         showerror(stderr, e, Base.stacktrace(Base.catch_backtrace()))
         nothing
     end
-
 # %ignore-below
+
 @test tryparse_notebook(notebook) isa Expr
 
 #= %only-compiled # ! 模块上下文：导出元素
@@ -969,9 +989,60 @@ include_notebook_by_cell(path::AbstractString; kwargs...) = eval_notebook_by_cel
     # 其它附加参数（如「编译根目录」）
     kwargs...
 )
-
 # %ignore-below
 
+# 测试`%inline-compiled`
+let 引入路径 = joinpath(ROOT_PATH, "test", "%inline-compiled.test.ipynb")
+    # 放置测试脚本
+    ispath(引入路径) || write(引入路径, """{
+        "cells": [
+            {
+                "cell_type": "code",
+                "metadata": {},
+                "source": [
+                    "# %ignore-cell",
+                    "print(\"这单元格不会引入\")"
+                ]
+            },
+            {
+                "cell_type": "code",
+                "metadata": {},
+                "source": [
+                    "# %ignore-line",
+                    "println(\"这行不会被引入\")",
+                    "println(\"这行会被引入\")"
+                ]
+            }
+        ],
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Julia 1.10.0",
+                "language": "julia",
+                "name": "julia-1.10"
+            },
+            "language_info": {
+                "name": "julia"
+            }
+        },
+        "nbformat": 4,
+        "nbformat_minor": 2
+    }""")
+    # 现场编译
+    引入后内容 = compile_code_lines(
+        IpynbCell(;
+            cell_type="code",
+            source=["#= %inline-compiled =# include_notebook($(repr(引入路径)))"]
+        );
+        lang=:julia
+    )
+    @test startswith(引入后内容, "# %% Jupyter Notebook | Julia")
+    @test contains(引入后内容, "println(\"这行会被引入\")")
+    @test !contains(引入后内容, "println(\"这行不会被引入\")")
+    @test !contains(引入后内容, "println(\"这单元格不会被引入\")")
+    println(引入后内容)
+end
+
+# %ignore-cell
 # * 递回执行自身代码（自举）
 include_notebook(SELF_PATH)
 
