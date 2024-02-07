@@ -1,6 +1,6 @@
-# %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
+# %% Jupyter Notebook | Julia 1.10.0 @ julia | format 2~4
 # % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.9.1"}
-# % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
+# % kernelspec: {"name":"julia-1.10","display_name":"Julia 1.10.0","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
 
@@ -712,7 +712,7 @@ for (lang::Symbol, (i::String, (m_head::String, m_tail::String))) in (
     # :zig                => []
 ]
 # *【2024-01-26 21:43:27】统一了类似「执行时加载，编译后内联」的机制，
-# * @example `#= %inline-compiled =# include("language_comment_forms.data.jl")`
+# * @example `#= %inline-compiled =# include("datas/language_comment_forms.data.jl")`
 # * 其中`compiled`表示「编译后」，`inline`表示「内联」
 # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )

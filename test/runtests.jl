@@ -154,7 +154,7 @@ const LANG_IDENTIFY_DICT = Dict{Symbol,Regex}(
     for (lang::Symbol, regex_str::String) in
     # ! 以下「特殊注释」需要在行首
     # * 下方内容是「执行时动态引入，编译时静态内联」
-#= %inline-compiled =# include("./../src/language_identify_dict.data.jl")
+#= %inline-compiled =# include("./../src/datas/language_identify_dict.data.jl")
     # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
 
@@ -198,9 +198,9 @@ const LANG_COMMENT_DICT_MULTILINE_TAIL = Dict{Symbol,String}()
 # * 外部表格的数据结构：`Dict(语言 => [单行注释, [多行注释开头, 多行注释结尾]])`
 for (lang::Symbol, (i::String, (m_head::String, m_tail::String))) in (
 # ! 以下「特殊注释」需要在行首
-#= %inline-compiled =# include("./../src/language_comment_forms.data.jl")
+#= %inline-compiled =# include("./../src/datas/language_comment_forms.data.jl")
 # *【2024-01-26 21:43:27】统一了类似「执行时加载，编译后内联」的机制，
-# * @example `#= %inline-compiled =# include("language_comment_forms.data.jl")`
+# * @example `#= %inline-compiled =# include("datas/language_comment_forms.data.jl")`
 # * 其中`compiled`表示「编译后」，`inline`表示「内联」
 # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
@@ -224,7 +224,7 @@ generate_comment_multiline_tail(lang::Symbol) = LANG_COMMENT_DICT_MULTILINE_TAIL
 "【内部】编程语言⇒常用扩展名（不带`.`）"
 const LANG_EXTENSION_DICT = Dict{Symbol,String}(
     # ! 以下「特殊注释」需要在行首
-#= %inline-compiled =# include("./../src/language_extension_dict.data.jl")
+#= %inline-compiled =# include("./../src/datas/language_extension_dict.data.jl")
     # !【2024-01-27 00:48:32】为了兼容自动生成的测试文件`runtests.jl`，需要使用「相对绝对路径」`./../src/`
 )
 
