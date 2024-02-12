@@ -1,4 +1,4 @@
-<!-- ⚠️该文件由 `IpynbCompile.ipynb` 自动生成于 2024-02-07T19:07:22.340，无需手动修改 -->
+<!-- ⚠️该文件由 `IpynbCompile.ipynb` 自动生成于 2024-02-12T13:48:58.408，无需手动修改 -->
 # IpynbCompile.jl: 一个实用的Jupyter笔记本构建工具
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)

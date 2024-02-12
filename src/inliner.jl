@@ -1,11 +1,11 @@
-# %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
-# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.9.1"}
-# % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
+# %% Jupyter Notebook | Julia 1.10.0 @ julia | format 2~4
+# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.10.0"}
+# % kernelspec: {"name":"julia-1.10","display_name":"Julia 1.10.0","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
 
 # %% [1] markdown
-# # IpynbCompile.jl 交互式命令行
+# # IpynbCompile.jl 交互式命令行 | 内联
 
 # %% [2] markdown
 # **✨执行其中所有单元格，可自动构建、测试并生成相应`.jl`源码**！
@@ -13,9 +13,9 @@
 # %% [3] markdown
 # 主要用途：为 ***IpynbCompile.jl*** 提供交互访问接口
 # - 可通过cmd命令行调用
-#     - 直接编译 语法：`compiler.ipynb.jl 文件名.ipynb`
+#     - 直接编译 语法：`inliner.ipynb.jl 文件名.ipynb`
 # - 可直接打开并进入「交互模式」
-#     - 直接键入路径，自动解析、编译并生成源码文件
+#     - 直接键入路径，自动解析、内联并生成`.md`文档
 
 # %% [4] markdown
 # ## 引入模块
@@ -33,13 +33,13 @@ include(LIB_JL_PATH)
 # ## 预置函数
 
 # %% [8] code
-try_compile_notebook(path, destination) = try
-    printstyled("Compiling \"$path\" => \"$destination\"...\n", color=:white)
-    local num_bytes = IpynbCompile.compile_notebook(path, destination)
+try_inline_notebook(path, destination) = try
+    printstyled("Inlining \"$path\" => \"$destination\"...\n", color=:white)
+    local num_bytes = IpynbCompile.inline_notebook_to_markdown(path, destination)
     # 编译结果
-    printstyled("[√] Compiling succeed with $num_bytes bytes!\n", color=:light_green)
+    printstyled("[√] Inlining succeed with $num_bytes bytes!\n", color=:light_green)
 catch e
-    printstyled("[×] Compiling failed!\n", color=:light_red)
+    printstyled("[×] Inlining failed!\n", color=:light_red)
     @error e
     showerror(e)
 end
@@ -52,9 +52,9 @@ end
 
 # %% [11] code
 # ! 📝Julia对「命令行参数」的存储：【不包括】自身路径
-function compile_with_ARGS(ARGS=ARGS)
+function inline_with_ARGS(ARGS=ARGS)
     for path in ARGS
-        try_compile_notebook(path)
+        try_inline_notebook(path)
     end
 end
 
@@ -82,12 +82,12 @@ function interactive_mode()
         printstyled("Reading \"$path\"...\n", color=:white)
         local notebook = IpynbCompile.read_notebook(path)
         local lang = IpynbCompile.identify_lang(notebook)
-        local default_out = "$path.$(IpynbCompile.get_extension(lang))"
+        local default_out = "$path.md" # ! 默认只会编译成`.md`文件
         # 请求输出路径 | 默认为`输入路径.jl`
         printstyled("            > out_path(default \"$default_out\")="; color=:light_cyan, bold=true)
         out_path = readline()
         isempty(out_path) && (out_path = default_out) # 无⇒自动附加扩展名
-        try_compile_notebook(path, out_path)
+        try_inline_notebook(path, out_path)
     end
 end
 

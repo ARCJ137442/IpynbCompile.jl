@@ -518,7 +518,7 @@ function compile_code_lines(cell::IpynbCell;
     # 所使用的编程语言
     lang::Symbol,
     # 根路径（默认为「执行编译的文件」所在目录）
-    root_path::AbstractString=@__DIR__,
+    root_path::AbstractString=@__DIR__(),
     # 其它参数
     kwargs...)::Union{String,Nothing}
 
@@ -553,9 +553,20 @@ function compile_code_lines(cell::IpynbCell;
         elseif startswith(current_line, "$(generate_comment_inline(lang)) %include")
             # 在指定的「根路径」参数下行事 # * 无需使用`@inline`，编译器会自动内联
             local relative_path = current_line[nextind(current_line, 1, length("$(generate_comment_inline(lang)) %include ")):end] |> rstrip # ! ←注意`%include`后边有个空格
-            # 读取内容
-            local content::String = read(joinpath(root_path, relative_path), String)
-            result *= content # ! 不会自动添加换行！
+            try
+                # 读取内容
+                local content::String = read(joinpath(root_path, relative_path), String)
+                result *= content # ! 不会自动添加换行！
+            catch e # *【2024-02-12 12:48:05】设立缘由：可能将Markdown的示例代码进行不必要的引入/内联
+                # 读取失败，显示警告
+                if e isa SystemError
+                    @warn "引入文件「$(relative_path)」失败！错误码：$(e.errnum)" current_line current_line_i
+                else
+                    @warn "引入文件「$(relative_path)」失败！$e" current_line current_line_i
+                end
+                # 保留原始行
+                result *= current_line
+            end
 
         # * `#= %inline-compiled =# <include>(` 读取`<include>`后边指定的路径，解析其并内容作为「当前行」内联添加（不会自动添加换行！） | 仅需为行前缀
         elseif startswith(current_line, "$(generate_comment_multiline_head(lang)) %inline-compiled $(generate_comment_multiline_tail(lang))")
@@ -575,20 +586,31 @@ function compile_code_lines(cell::IpynbCell;
             if expr.head == :call && length(expr.args) > 1
                 # 在指定的「根路径」参数下行事 # * 无需使用`@inline`，编译器会自动内联
                 relative_path = Main.eval(expr.args[2]) # * 在主模块上下文中加载计算路径
-                local file_path::String = joinpath(root_path, relative_path)
-                # * include⇒读取文件内容
-                if expr.args[1] == :include
-                    content = read(file_path, String)
-                # * include_notebook⇒读取编译笔记本
-                elseif expr.args[1] == :include_notebook
-                    content = compile_notebook(
-                        IpynbNotebook(file_path); # 需要构造函数 # ! 直接使用字符串会将其编译为源码文件
-                        root_path=dirname(file_path), # ! 使用文件自身的根目录
-                        kwargs..., # 其它附加参数
-                    )
+                try
+                    local file_path::String = joinpath(root_path, relative_path)
+                    # * include⇒读取文件内容
+                    if expr.args[1] == :include
+                        content = read(file_path, String)
+                    # * include_notebook⇒读取编译笔记本
+                    elseif expr.args[1] == :include_notebook
+                        content = compile_notebook(
+                            IpynbNotebook(file_path); # 需要构造函数 # ! 直接使用字符串会将其编译为源码文件
+                            root_path=dirname(file_path), # ! 使用文件自身的根目录
+                            kwargs..., # 其它附加参数
+                        )
+                    end
+                    # 追加内容
+                    result *= content # ! 不会自动添加换行！
+                catch e # *【2024-02-12 12:48:05】设立缘由：可能将Markdown的示例代码进行不必要的引入/内联
+                    # 读取失败，显示警告
+                    if e isa SystemError
+                        @warn "内联文件「$(relative_path)」失败！错误码：$(e.errnum)" current_line current_line_i
+                    else
+                        @warn "内联文件「$(relative_path)」失败！$e" current_line current_line_i
+                    end
+                    # 保留原始行
+                    result *= current_line
                 end
-                # 追加内容
-                result *= content # ! 不会自动添加换行！
             else # 若非`include(路径)`的形式⇒警告
                 @warn "非法表达式，内联失败！" current_line expr
             end
@@ -829,6 +851,7 @@ $(compile_cell(notebook.cells; lang, kwargs...))
 以「配对」方式进行展开，允许同时编译多个笔记本
 - 🎯支持形如`compile_notebook(笔记本1 => 目标1, 笔记本2 => 目标2)`的语法
 - 📌无论在此的「笔记本」「目标」路径还是其它的
+- @param pairs 笔记本与目标的「配对」
 """
 function compile_notebook(pairs::Vararg{Pair})
     for pair in pairs
@@ -842,27 +865,29 @@ end
 - @param path 要写入的路径
 - @return 写入结果
 """
-compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) = write(
-    # 使用 `write`函数，自动写入编译结果
-    path,
-    # 传入前编译
-    compile_notebook(notebook; kwargs...)
-)
+compile_notebook(notebook::IpynbNotebook, path::AbstractString; kwargs...) =
+    write(
+        # 使用 `write`函数，自动写入编译结果
+        path,
+        # 传入前编译
+        compile_notebook(notebook; kwargs...)
+    )
 
 """
 编译指定路径的笔记本，并写入指定路径
 - @param path 要读取的路径
 - @return 写入结果
 """
-compile_notebook(path::AbstractString, destination; kwargs...) = compile_notebook(
-    # 直接使用构造函数加载笔记本
-    IpynbNotebook(path),
-    # 保存在目标路径
-    destination;
-    # 其它附加参数 #
-    # 自动从`path`构造编译根目录
-    root_path=dirname(path),
-)
+compile_notebook(path::AbstractString, destination; kwargs...) =
+    compile_notebook(
+        # 直接使用构造函数加载笔记本
+        IpynbNotebook(path),
+        # 保存在目标路径
+        destination;
+        # 其它附加参数 #
+        # 自动从`path`构造编译根目录
+        root_path=dirname(path),
+    )
 
 """
 编译指定路径的笔记本，并根据读入的笔记本【自动追加相应扩展名】
@@ -1044,6 +1069,192 @@ let 引入路径 = joinpath(ROOT_PATH, "test", "%inline-compiled.test.ipynb")
     println(引入后内容)
     # 清理现场
     rm(引入路径)
+end
+
+#= %only-compiled # ! 模块上下文：导出元素
+export inline_notebook_to_markdown
+%only-compiled =#
+
+"""
+【内部】计算「为避免内部歧义所需涵盖的反引号数量」
+- 核心方法：找到代码中最长的「`」数量，然后+1覆盖之
+- 参考：https://blog.csdn.net/qq_41437512/article/details/128436712
+"""
+_quote_marks(raw_content) =
+    '`' ^ (
+        maximum( # 取最大值
+            findall(r"(`+)", raw_content)
+            .|> length; # 批量求长
+            init=2 # 最小为2（保证最终值不小于3）
+        ) + 1 # 保证覆盖
+    )
+
+"""
+【内部】内联一个单元格至Markdown
+"""
+function inline_cell_to_markdown(
+    cell::IpynbCell;
+    lang::Symbol, # ! 这是笔记本所用的语言
+    compile::Bool=true,
+    kwargs...
+)::Union{String,Nothing}
+    # 先根据「是否编译」决定「原始码」
+    local raw_content::Union{String,Nothing} = (
+        compile ?
+        compile_code_lines(
+            cell;
+            lang=(
+                # ! 特别 对Markdown单元格做「语言特化」
+                cell.cell_type == "markdown" ?
+                :markdown :
+                :julia
+            ),
+            kwargs...
+        ) :
+        # ! ↑此处可能返回`nothing`
+        join(cell.source)
+    )
+    # 编译为空⇒返回空 #
+    isnothing(raw_content) && return nothing
+
+    # 封装各单元格「原始码」为Markdown & 返回 #
+    # * Markdown单元格⇒返回自身
+    return if cell.cell_type == "code"
+        quote_marks = _quote_marks(raw_content)
+        """\
+        $(quote_marks)$lang
+        $(raw_content)
+        $(quote_marks)\
+        """
+        # * Markdown单元格⇒返回自身
+    elseif cell.cell_type == "markdown"
+        raw_content
+    else
+        @warn "未支持的单元格类型：$(cell.cell_type)"
+        # ! 仍然内联，但会放入「无语言代码块」中
+        quote_marks = _quote_marks(raw_content)
+        """\
+        $(quote_marks)
+        $(raw_content)
+        $(quote_marks)\
+        """
+    end
+end
+
+"""
+内联整个笔记本至Markdown
+- 🎯编译/内联整个笔记本对象，形成相应**Markdown文档**（`.md`文件）
+    - 📌可通过`compile`关键字参数选择「是否编译单元格」
+        - 默认启用「编译」
+    - ✨由此可使用Jupyter写Markdown文档
+- 📌整体文本：各单元格编译+代码块封装
+- ⚠️末尾固定为一个换行符
+- @param notebook 要内联的笔记本对象
+- @return 内联后的文本
+"""
+function inline_notebook_to_markdown(
+    notebook::IpynbNotebook;
+    lang::Symbol=identify_lang(notebook),
+    compile::Bool=true,
+    kwargs...
+)
+    # 内联所有单元格数据
+    local inlined_cells::Vector{String} = String[]
+    local inlined_cell::Union{String,Nothing}
+    for cell in notebook.cells
+        inlined_cell = inline_cell_to_markdown(
+            cell;
+            lang,
+            compile,
+            kwargs...
+        )
+        # 仅非空者加入 | 处理`%ignore-cell`的情况
+        isnothing(inlined_cell) || push!(inlined_cells, inlined_cell)
+    end
+    # 合并，固定末尾换行
+    (join(inlined_cells, "\n\n") |> rstrip) * '\n'
+end
+
+"""
+以「配对」方式进行展开，允许同时内联多个笔记本
+- 🎯支持形如`inline_notebook_to_markdown(笔记本1 => 目标1, 笔记本2 => 目标2)`的语法
+- 📌无论在此的「笔记本」「目标」路径还是其它的
+- @param pairs 笔记本与目标的「配对」
+"""
+function inline_notebook_to_markdown(pairs::Vararg{Pair})
+    for pair in pairs
+        inline_notebook_to_markdown(first(pair), last(pair))
+    end
+end
+
+"""
+内联整个笔记本，并【写入】指定路径
+- @param notebook 要内联的笔记本对象
+- @param path 要写入的路径
+- @return 写入结果
+"""
+inline_notebook_to_markdown(notebook::IpynbNotebook, path::AbstractString; kwargs...) =
+    write(
+        # 使用 `write`函数，自动写入内联结果
+        path,
+        # 传入前内联
+        inline_notebook_to_markdown(notebook; kwargs...)
+    )
+
+"""
+内联指定路径的笔记本，并写入指定路径
+- @param path 要读取的路径
+- @return 写入结果
+"""
+inline_notebook_to_markdown(path::AbstractString, destination; kwargs...) =
+    inline_notebook_to_markdown(
+        # 直接使用构造函数加载笔记本
+        IpynbNotebook(path),
+        # 保存在目标路径
+        destination;
+        # 其它附加参数 #
+        # 自动从`path`构造内联根目录
+        root_path=dirname(path),
+    )
+
+"""
+内联指定路径的笔记本，并根据读入的笔记本【自动追加相应扩展名】
+- @param path 要读取的路径
+- @return 写入结果
+"""
+inline_notebook_to_markdown(path::AbstractString; kwargs...) =
+    inline_notebook_to_markdown(
+        # 直接使用构造函数加载笔记本
+        IpynbNotebook(path),
+        # 自动追加扩展名，作为目标路径
+        "$path.md";
+        # 其它附加参数 #
+        # 自动从`path`构造编译根目录
+        root_path=dirname(path),
+    )
+# %ignore-below
+
+# * 单元测试：自内联生成Markdown文档
+let OUT_MD_FILE = "IpynbCompile.md" # 直接作为库的主文件
+
+    # 临时创建文档
+    FULL_MD_PATH = joinpath(ROOT_PATH, "src", OUT_MD_FILE)
+    write_bytes = inline_notebook_to_markdown(SELF_PATH => FULL_MD_PATH)
+    printstyled(
+        "✅Jupyter笔记本「主模块」自内联测试成功！\n（共写入 $write_bytes 个字节）\n";
+        color=:light_yellow, bold=true
+    )
+
+    # 读取&测试 文档内容
+    inlined_content = read(FULL_MD_PATH, String)
+    @test contains(inlined_content, "```julia") # 具有`julia`代码块
+
+    # 删除文档，并打印其中内容
+    rm(FULL_MD_PATH)
+    printstyled(
+        "ℹ️自内联测试文件已删除！以下是文件内容：\n";
+        color=:light_red, bold=true
+    ) |> print
 end
 
 # %ignore-cell
