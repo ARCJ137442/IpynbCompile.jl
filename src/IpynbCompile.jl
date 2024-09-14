@@ -1,6 +1,6 @@
-# %% Jupyter Notebook | Julia 1.10.0 @ julia | format 2~4
+# %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
 # % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.10.0"}
-# % kernelspec: {"name":"julia-1.10","display_name":"Julia 1.10.0","language":"julia"}
+# % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
 
@@ -12,12 +12,20 @@
 # （✨执行其中所有单元格，可自动构建、测试并生成相应`.jl`源码、测试文件与README！）
 
 # %% [3] markdown
-# [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
-# [![Static Badge](https://img.shields.io/badge/julia-package?logo=julia&label=1.7%2B)](https://julialang.org/)
+# ![GitHub License](https://img.shields.io/github/license/ARCJ137442/IpynbCompile.jl?style=for-the-badge&color=a270ba)
+# ![Code Size](https://img.shields.io/github/languages/code-size/ARCJ137442/IpynbCompile.jl?style=for-the-badge&color=a270ba)
+# ![Lines of Code](https://www.aschey.tech/tokei/github.com/ARCJ137442/IpynbCompile.jl?style=for-the-badge&color=a270ba)
+# [![Language](https://img.shields.io/badge/language-Julia%201.7+-purple?style=for-the-badge&color=a270ba)](https://cn.julialang.org/)
 # 
-# [![CI status](https://github.com/ARCJ137442/IpynbCompile.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/IpynbCompile.jl/actions/workflows/ci.yml)
+# 开发状态：
 # 
-# 该项目使用[语义化版本 2.0.0](https://semver.org/)进行版本号管理。
+# [![CI status](https://img.shields.io/github/actions/workflow/status/ARCJ137442/IpynbCompile.jl/ci.yml?style=for-the-badge)](https://github.com/ARCJ137442/IpynbCompile.jl/actions/workflows/ci.yml)
+# 
+# ![Created At](https://img.shields.io/github/created-at/ARCJ137442/IpynbCompile.jl?style=for-the-badge)
+# ![Last Commit](https://img.shields.io/github/last-commit/ARCJ137442/IpynbCompile.jl?style=for-the-badge)
+# 
+# [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?style=for-the-badge)](https://conventionalcommits.org)
+# ![GitHub commits since latest release](https://img.shields.io/github/commits-since/ARCJ137442/IpynbCompile.jl/latest?style=for-the-badge)
 
 # %% [4] markdown
 # ## 主要功能
