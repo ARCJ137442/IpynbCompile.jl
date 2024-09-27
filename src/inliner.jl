@@ -1,5 +1,5 @@
 # %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
-# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.10.0"}
+# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.9.1"}
 # % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
@@ -80,6 +80,7 @@ function interactive_mode()
             return
         end
         # 先读取笔记本
+        ispath(path) || (path = strip(path, '\"')) # 若非路径，尝试截掉前后引号（应对Windows中拖动文件的情形）
         printstyled("Reading \"$path\"...\n", color=:white)
         local notebook = IpynbCompile.read_notebook(path)
         local lang = IpynbCompile.identify_lang(notebook)
