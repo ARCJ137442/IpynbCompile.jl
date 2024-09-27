@@ -1,6 +1,6 @@
-# %% Jupyter Notebook | Julia 1.10.0 @ julia | format 2~4
+# %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
 # % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.10.0"}
-# % kernelspec: {"name":"julia-1.10","display_name":"Julia 1.10.0","language":"julia"}
+# % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
 
@@ -34,6 +34,7 @@ include(LIB_JL_PATH)
 
 # %% [8] code
 try_inline_notebook(path, destination) = try
+    ispath(path) || (path = strip(path, '\"')) # 若非路径，尝试截掉前后引号（应对Windows中拖动文件的情形）
     printstyled("Inlining \"$path\" => \"$destination\"...\n", color=:white)
     local num_bytes = IpynbCompile.inline_notebook_to_markdown(path, destination)
     # 编译结果

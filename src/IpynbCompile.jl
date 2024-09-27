@@ -1,5 +1,5 @@
 # %% Jupyter Notebook | Julia 1.9.1 @ julia | format 2~4
-# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.10.0"}
+# % language_info: {"file_extension":".jl","mimetype":"application/julia","name":"julia","version":"1.9.1"}
 # % kernelspec: {"name":"julia-1.9","display_name":"Julia 1.9.1","language":"julia"}
 # % nbformat: 4
 # % nbformat_minor: 2
